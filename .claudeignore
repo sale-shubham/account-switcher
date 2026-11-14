@@ -1,0 +1,23 @@
+# Same rules as .gitignore, except accounts.json: it holds no secrets and
+# Claude needs it to add or fix profiles.
+
+# Claude hook state
+.claude/.session-edits.log
+.claude/.quality-stamp
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Logs
+*.log
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Web UI dependencies and build output
+web/node_modules/
+web/dist/

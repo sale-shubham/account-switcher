@@ -1,0 +1,25 @@
+# Personal profiles (names, emails, logins) — copy accounts.example.json
+accounts.json
+
+# Claude: personal settings + hook state
+.claude/settings.local.json
+.claude/.session-edits.log
+.claude/.quality-stamp
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Logs
+*.log
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Web UI (npm install / npm run build output)
+web/node_modules/
+web/dist/
+*.tsbuildinfo

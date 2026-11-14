@@ -1,0 +1,12 @@
+{
+  "work": {
+    "name": "Your Name",
+    "email": "you@company.com",
+    "user": "work-github-login"
+  },
+  "personal": {
+    "name": "Your Name",
+    "email": "you@example.com",
+    "user": "personal-github-login"
+  }
+}

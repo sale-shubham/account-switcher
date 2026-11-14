@@ -1,0 +1,102 @@
+# Profiles and data directory
+
+Covers `accounts.json`, the `%LOCALAPPDATA%\github-switch` layout, `Get-Account`,
+`Set-AccountProfile`, `Get-ActiveProfile`, `Get-DesktopSnapshot`, `Get-VSCodeSnapshot`,
+`Get-LoginState`, `Get-SwitcherStatus` and `Show-Status` in `switch-github-core.ps1`.
+
+## `accounts.json` schema
+
+Next to the scripts (`$PSScriptRoot`). Gitignored — copy from `accounts.example.json`, or let the
+web UI create it. A missing file loads as zero profiles.
+
+```json
+{
+  "<profile>": { "name": "<git user.name>", "email": "<git user.email>", "user": "<GitHub login>" }
+}
+```
+
+| Field | Used for |
+|---|---|
+| `name` | `git config --global user.name` |
+| `email` | `git config --global user.email` |
+| `user` | `gh auth switch --user`, `credential.https://github.com.username`, token backup filter, Desktop login check |
+
+## Data directory
+
+```
+%LOCALAPPDATA%\github-switch\
+├── current.txt                         # last profile switched to / saved (shown as "Active profile")
+├── <profile>\
+│   ├── Local Storage\                  # GitHub Desktop snapshot (-Save)
+│   └── vscode-github-auth.txt          # VS Code session, VS Code-encrypted (-Save)
+├── _previous\                          # state replaced by the last switch (one level)
+│   ├── Local Storage\
+│   └── vscode-github-auth.txt
+└── _cleared\<yyyyMMdd-HHmmss>\         # state moved aside by -Clear
+```
+
+Token backups are **not** here — they are Credential Manager entries
+`github-switch:<profile>:<original target>` (`readme/methods/credential-store.md`).
+
+## API
+
+### `Get-Account $profileName`
+Returns the profile object. `throw` if unknown (lists available names) or if `name`, `email` or
+`user` is empty.
+
+### `Set-AccountProfile $profileName $gitName $email $user`
+Adds or replaces a profile in `$accounts` / `$names` (script scope) and rewrites `accounts.json`
+as UTF-8 **without** BOM (`[IO.File]::WriteAllText`; `Set-Content -Encoding UTF8` would add one in
+PowerShell 5.1). `throw` if the profile name has anything but letters, digits and `-`, if `$user`
+does not match `$loginPattern` (`^[A-Za-z0-9-]{1,39}$`, GitHub's rule — logins go on native
+command lines), or if the git name or email is empty.
+
+### `Set-GitIdentity $account`
+Sets global `user.name`, `user.email` and `credential.https://github.com.username` from a profile.
+Used by `Switch-Profile` and `Save-ProfileState`. The GCM username is what makes pushes (also
+from VS Code, where prompts are disabled) use this account's stored token.
+
+### `Get-ActiveProfile`
+First line of `current.txt` as a plain `[string]` (so `ConvertTo-Json` does not serialize
+`Get-Content`'s `PSPath` properties), or `''`. Only `Save-ProfileState` and `Switch-Profile` write it, and
+both also call `Set-GitIdentity`, so it matches git's account.
+
+### `Get-DesktopSnapshot $profileName` / `Get-VSCodeSnapshot $profileName`
+Paths of the two snapshot items for a profile.
+
+### `Get-LoginState $user` → ordered hashtable `gh`, `git`, `desktop`, `vscode` (booleans)
+Local checks only: Credential Manager `gh:github.com:<user>`, `git credential-manager github list`,
+Credential Manager `GitHub - https://api.github.com/<user>`, and `Test-VSCodeSession` (any account).
+Feeds the web UI's add-account sign-in list (`GET /api/login-state`).
+
+### `Get-SwitcherStatus` → ordered hashtable
+Everything the CLI status and the web UI show, gathered once:
+
+```
+activeProfile                       current.txt
+git      { name, email }            global git config
+tools.gh      { installed, account }   gh api user --jq .login (needs network; $null offline)
+tools.git     { account, signedIn }    credential.https://github.com.username; signedIn = GCM list has it
+tools.desktop { account }              Get-DesktopLogin
+tools.vscode  { installed, session }   $hasVSCode; Test-VSCodeSession
+profiles [ { name, gitName, email, user, desktopSaved, vscodeSaved } ]
+```
+
+Served as `GET /api/status`; the field names are the contract with `web/src/api.ts`.
+
+### `Show-Status`
+Prints `Get-SwitcherStatus`: active profile, git `user.name` / `user.email`, GCM default user, gh
+active account, Desktop login, and each profile with `[desktop, vscode]` markers for the snapshots
+it has. Run with no arguments to see it.
+
+## Notes
+
+- `$dataDir` is created on every run.
+- Profile names become folder names and Credential Manager target parts — keep them simple
+  (letters, digits, `-`).
+
+---
+*Last updated: 2026-11-14 (Get-SwitcherStatus for the web UI; $loginPattern + field checks in Set-AccountProfile)*
+*Previously: 2026-11-14 (Set-GitIdentity)*
+*Previously: 2026-10-30 (Set-AccountProfile, Get-ActiveProfile, Get-LoginState for the login window)*
+*Previously: 2026-10-30 (initial methods doc)*
