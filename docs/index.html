@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GitHub Account Switcher for Windows | Multiple GitHub accounts</title>
+<meta name="description" content="Use multiple GitHub accounts on one Windows PC. Switch between work and personal accounts in gh, git, GitHub Desktop and VS Code in one click, no signing out.">
+<link rel="canonical" href="https://sale-shubham.github.io/github-account-switcher/">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#f2f4f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f141b" media="(prefers-color-scheme: dark)">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="GitHub Account Switcher">
+<meta property="og:title" content="GitHub Account Switcher for Windows">
+<meta property="og:description" content="Switch between work and personal GitHub accounts in gh, git, GitHub Desktop and VS Code with one click. No signing out.">
+<meta property="og:url" content="https://sale-shubham.github.io/github-account-switcher/">
+<meta property="og:image" content="https://sale-shubham.github.io/github-account-switcher/og-image.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="GitHub Account Switcher: one account linked to GitHub CLI, Git, GitHub Desktop and VS Code">
+<meta name="twitter:card" content="summary_large_image">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "GitHub Account Switcher for Windows",
+  "description": "Use multiple GitHub accounts on one Windows PC. Switch between work and personal accounts in the GitHub CLI, git, GitHub Desktop and VS Code with one click, without signing out.",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Windows 10, Windows 11",
+  "url": "https://sale-shubham.github.io/github-account-switcher/",
+  "sameAs": "https://github.com/sale-shubham/github-account-switcher",
+  "image": "https://sale-shubham.github.io/github-account-switcher/og-image.png",
+  "screenshot": "https://sale-shubham.github.io/github-account-switcher/screenshot.png",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "sale-shubham", "url": "https://github.com/sale-shubham" }
+}
+</script>
+
+<style>
+/* Same design tokens as the app (web/src/styles.css): Windows-native type, cool neutrals, cobalt
+   accent, green for "linked". The one bold element is the switchboard in the hero. */
+:root {
+  --bg: #f2f4f7;
+  --surface: #ffffff;
+  --surface-sunken: #f7f8fa;
+  --ink: #18202c;
+  --muted: #5a6577;
+  --line: #dde2e9;
+  --line-strong: #c3cbd6;
+  --accent: #2754c5;
+  --accent-ink: #1f46a8;
+  --accent-soft: #e8eefc;
+  --on-accent: #ffffff;
+  --ok: #1e7f52;
+  --ok-soft: #e4f4ec;
+  --shadow-lift: 0 24px 60px rgba(17, 27, 45, 0.14);
+  --font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-display: 'Segoe UI Variable Display', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono: 'Cascadia Mono', 'Cascadia Code', Consolas, ui-monospace, monospace;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f141b;
+    --surface: #161d27;
+    --surface-sunken: #121821;
+    --ink: #e6eaf0;
+    --muted: #96a1b2;
+    --line: #253041;
+    --line-strong: #364357;
+    --accent: #7393ff;
+    --accent-ink: #9fb4ff;
+    --accent-soft: #1c2742;
+    --on-accent: #0c1222;
+    --ok: #4fc48c;
+    --ok-soft: #13291f;
+    --shadow-lift: 0 24px 60px rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 17px/1.6 var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, p { margin: 0; }
+a { color: var(--accent-ink); }
+code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 32px; }
+
+/* Header */
+.site-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 0; }
+.brand { display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; font: 600 17px/1 var(--font-display); letter-spacing: -0.01em; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 46px; padding: 0 22px;
+  border: 1px solid transparent; border-radius: 10px;
+  font: 600 15px/1 var(--font); text-decoration: none; cursor: pointer; white-space: nowrap;
+  transition: background-color 120ms, border-color 120ms, color 120ms;
+}
+.btn-primary { background: var(--accent); color: var(--on-accent); }
+.btn-primary:hover { background: var(--accent-ink); }
+.btn-secondary { background: var(--surface); border-color: var(--line-strong); color: var(--ink); }
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent-ink); }
+.btn-small { min-height: 36px; padding: 0 14px; font-size: 14px; }
+
+/* Hero */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 600px);
+  column-gap: 56px;
+  row-gap: 40px;
+  align-items: start;
+  padding: 56px 0 80px;
+}
+/* The headline spans the page in two balanced lines; copy and the switchboard sit under it. */
+.hero h1 {
+  grid-column: 1 / -1;
+  font: 700 clamp(2.4rem, 5.2vw, 4.1rem)/1.04 var(--font-display);
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.lede { max-width: 34em; color: var(--muted); font-size: 1.18rem; line-height: 1.55; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+.fine { margin-top: 18px; color: var(--muted); font-size: 14px; }
+
+/* Switchboard: two accounts on the left, one trunk, four tools on the right. */
+.board {
+  display: grid;
+  grid-template-columns: minmax(176px, 0.9fr) 36px minmax(0, 1.5fr);
+  align-items: center;
+  padding: 28px 28px 28px 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+.plugs, .sockets { list-style: none; margin: 0; padding: 0; }
+.plugs li { position: relative; padding: 8px 30px 8px 0; }
+/* Stub from each account to the joiner, then the joiner itself, trimmed at both ends. */
+.plugs li::before {
+  content: ''; position: absolute; right: 0; top: 50%; width: 30px;
+  border-top: 2px dashed var(--line-strong);
+}
+.plugs li::after {
+  content: ''; position: absolute; right: 0; top: 0; bottom: 0;
+  border-right: 2px solid var(--line-strong);
+}
+.plugs li:first-child::after { top: 50%; }
+.plugs li:last-child::after { bottom: 50%; }
+.plugs li.is-on::before { border-top-style: solid; border-top-color: var(--ok); }
+.plugs li.is-on::after { border-right-color: var(--ok); }
+
+.plug {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 120ms, background-color 120ms;
+}
+.plug::before {
+  content: ''; grid-row: span 2;
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid var(--line-strong);
+}
+.plug:hover { border-color: var(--accent); }
+.plug[aria-checked='true'] { background: var(--ok-soft); border-color: var(--ok); }
+.plug[aria-checked='true']::before { background: var(--ok); border-color: var(--ok); }
+.plug-name { font-weight: 600; font-size: 15px; line-height: 1.3; }
+.plug-login { font: 13px/1.35 var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.board-trunk { height: 2px; background: var(--ok); }
+
+.socket {
+  --i: 0;
+  position: relative;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0 9px 34px;
+}
+.socket::after {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  border-left: 2px solid var(--ok);
+}
+.socket:first-child::after { top: 50%; }
+.socket:last-child::after { bottom: 50%; }
+.socket::before {
+  content: ''; position: absolute; left: 0; top: 50%; width: 28px;
+  border-top: 2px solid var(--ok);
+  transform-origin: left center;
+}
+.socket-icon {
+  display: grid; place-items: center; width: 38px; height: 38px;
+  border-radius: 10px; background: var(--ok-soft); color: var(--ok);
+}
+.socket-tool { display: grid; min-width: 0; line-height: 1.3; }
+.socket-tool b { font-weight: 600; font-size: 15px; }
+.socket-tool span { font-size: 13px; color: var(--muted); }
+.socket-account { font: 500 14px/1.3 var(--mono); color: var(--ok); text-align: right; }
+
+/* The one motion moment: lines draw to each tool on load and on every switch. */
+.rewire .socket::before { animation: draw 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(var(--i) * 90ms); }
+.rewire .socket-account { animation: arrive 320ms ease-out both; animation-delay: calc(var(--i) * 90ms + 220ms); }
+@keyframes draw { from { transform: scaleX(0); } }
+@keyframes arrive { from { opacity: 0; transform: translateX(-6px); } }
+
+.board-hint { margin-top: 14px; color: var(--muted); font-size: 14px; text-align: center; }
+
+/* Screenshot */
+.shot { margin: 0 0 88px; }
+.shot img {
+  display: block; width: 100%; height: auto;
+  border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: var(--shadow-lift);
+}
+.shot figcaption { margin-top: 14px; color: var(--muted); font-size: 14px; }
+
+/* Sections */
+.section { padding: 72px 0; border-top: 1px solid var(--line); }
+.section h2 {
+  font: 700 clamp(1.65rem, 2.6vw, 2.15rem)/1.15 var(--font-display);
+  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+}
+.section-intro { max-width: 62ch; color: var(--muted); font-size: 1.06rem; }
+
+.table-scroll { margin-top: 32px; overflow-x: auto; }
+.stores { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 15px; }
+.stores th, .stores td { padding: 14px 20px 14px 0; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+.stores th { color: var(--muted); font-size: 14px; font-weight: 600; }
+.stores td:first-child { font-weight: 600; white-space: nowrap; }
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 56px;
+  margin: 28px 0 0;
+}
+.feature { padding: 22px 0; border-top: 1px solid var(--line); }
+.feature dt { font-weight: 600; font-size: 1.06rem; }
+.feature dd { margin: 4px 0 0; color: var(--muted); max-width: 52ch; }
+
+.reqs { margin: 20px 0 0; padding-left: 20px; color: var(--muted); max-width: 66ch; }
+.reqs li + li { margin-top: 4px; }
+
+.steps { list-style: none; counter-reset: step; margin: 36px 0 0; padding: 0; display: grid; gap: 32px; max-width: 780px; }
+.steps > li { counter-increment: step; display: grid; grid-template-columns: 32px minmax(0, 1fr); column-gap: 18px; }
+.steps > li::before {
+  content: counter(step);
+  grid-row: span 3;
+  display: grid; place-items: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1.5px solid var(--accent); color: var(--accent-ink);
+  font-weight: 700; font-size: 14px;
+}
+.steps h3 { font-size: 1.1rem; font-weight: 600; line-height: 32px; }
+.steps p { color: var(--muted); margin-top: 6px; }
+
+.code { position: relative; margin-top: 12px; }
+.code pre {
+  margin: 0;
+  padding: 14px 92px 14px 16px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: 14px/1.65 var(--mono);
+  overflow-x: auto;
+}
+.code .btn { position: absolute; top: 8px; right: 8px; }
+
+.cli { margin-top: 44px; max-width: 780px; }
+.cli h3 { font-size: 1.1rem; font-weight: 600; }
+
+.faq { margin-top: 24px; max-width: 780px; }
+.faq details { border-top: 1px solid var(--line); }
+.faq details:last-child { border-bottom: 1px solid var(--line); }
+.faq summary {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 20px;
+  padding: 18px 0; font-weight: 600; font-size: 1.06rem; cursor: pointer; list-style: none;
+}
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: '+'; color: var(--muted); font-size: 1.4rem; line-height: 1; font-weight: 400; }
+.faq details[open] summary::after { content: '\2212'; }
+.faq details p { margin: -4px 0 20px; color: var(--muted); max-width: 68ch; }
+
+/* Footer */
+.site-foot {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px 32px;
+  padding: 32px 0 48px; border-top: 1px solid var(--line);
+  color: var(--muted); font-size: 14px;
+}
+.foot-links { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.foot-links a { color: var(--muted); }
+.foot-links a:hover { color: var(--ink); }
+
+@media (max-width: 980px) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 40px; padding-top: 24px; }
+  .board { max-width: 620px; }
+}
+
+@media (max-width: 640px) {
+  body { font-size: 16px; }
+  .wrap { padding: 0 16px; }
+  .site-head .btn { display: none; }
+  .hero { padding-bottom: 48px; }
+  .lede { font-size: 1.08rem; }
+  .board { grid-template-columns: minmax(0, 1fr); row-gap: 14px; padding: 16px; }
+  .plugs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .plugs li { padding: 0; }
+  .plugs li::before, .plugs li::after, .board-trunk { display: none; }
+  .socket { grid-template-columns: 38px minmax(0, 1fr); row-gap: 2px; padding-left: 28px; }
+  .socket-account { grid-column: 2; text-align: left; }
+  /* The account wraps under the tool, so the lines meet the icon, not the row middle. */
+  .socket::before, .socket:first-child::after { top: 28px; }
+  .socket::before { width: 22px; }
+  .socket:last-child::after { bottom: auto; height: 28px; }
+  .shot { margin-bottom: 56px; }
+  .section { padding: 56px 0; }
+  .features { grid-template-columns: minmax(0, 1fr); }
+  .steps > li { grid-template-columns: 28px minmax(0, 1fr); column-gap: 14px; }
+  .steps > li::before { width: 28px; height: 28px; }
+  .steps h3 { line-height: 28px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="site-head">
+    <a class="brand" href="./">
+      <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><circle cx="9" cy="16" r="3.5" fill="var(--on-accent)"/><path d="M12.5 16h4M16.5 9v14M16.5 9h3.5M16.5 16h3.5M16.5 23h3.5" stroke="var(--on-accent)" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="23" cy="9" r="2" fill="var(--on-accent)"/><circle cx="23" cy="16" r="2" fill="var(--on-accent)"/><circle cx="23" cy="23" r="2" fill="var(--on-accent)"/></svg>
+      GitHub Account Switcher
+    </a>
+    <a class="btn btn-secondary btn-small" href="https://github.com/sale-shubham/github-account-switcher">Source on GitHub</a>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="title">
+      <h1 id="title">Switch GitHub accounts on Windows, in every tool at once</h1>
+      <div>
+        <p class="lede">Work and personal GitHub accounts on one PC. One click moves the GitHub CLI, git, GitHub Desktop and VS Code to the other account, with no signing out and back in.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="https://github.com/sale-shubham/github-account-switcher">Get it on GitHub</a>
+          <a class="btn btn-secondary" href="#start">Quick start</a>
+        </div>
+        <p class="fine">Free. For Windows 10 and 11. Runs only on your PC.</p>
+      </div>
+
+      <div>
+        <div class="board">
+          <ul class="plugs" role="radiogroup" aria-label="Active account">
+            <li class="is-on"><button type="button" class="plug" role="radio" aria-checked="true" data-login="you-work"><span class="plug-name">work</span><span class="plug-login">@you-work</span></button></li>
+            <li><button type="button" class="plug" role="radio" aria-checked="false" tabindex="-1" data-login="you-personal"><span class="plug-name">personal</span><span class="plug-login">@you-personal</span></button></li>
+          </ul>
+          <span class="board-trunk" aria-hidden="true"></span>
+          <ul class="sockets rewire" aria-label="Tools and the account each one uses">
+            <li class="socket" style="--i: 0">
+              <span class="socket-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="m7 9 3 3-3 3M12.5 15H17"/></svg></span>
+              <span class="socket-tool"><b>GitHub CLI</b><span>gh</span></span>
+              <span class="socket-account" data-account>@you-work</span>
+            </li>
+            <li class="socket" style="--i: 1">
+              <span class="socket-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="5.5" r="2"/><circle cx="6" cy="18.5" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7.5v9M18 10c0 4-4 4.5-10.5 7"/></svg></span>
+              <span class="socket-tool"><b>Git</b><span>Pushes and commits</span></span>
+              <span class="socket-account" data-account>@you-work</span>
+            </li>
+            <li class="socket" style="--i: 2">
+              <span class="socket-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M9 20h6M12 16v4"/></svg></span>
+              <span class="socket-tool"><b>GitHub Desktop</b><span>App sign-in</span></span>
+              <span class="socket-account" data-account>@you-work</span>
+            </li>
+            <li class="socket" style="--i: 3">
+              <span class="socket-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8.5 8-4 4 4 4M15.5 8l4 4-4 4M13.5 5.5l-3 13"/></svg></span>
+              <span class="socket-tool"><b>VS Code</b><span>GitHub session</span></span>
+              <span class="socket-account" data-account>@you-work</span>
+            </li>
+          </ul>
+        </div>
+        <p class="board-hint">Pick an account. All four tools follow it.</p>
+        <p class="visually-hidden" id="board-status" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <figure class="shot">
+      <img src="screenshot.png" width="1220" height="878" loading="lazy" decoding="async"
+        alt="The Account Switcher page: the active account linked to GitHub CLI, Git, GitHub Desktop and VS Code, with the saved profiles and a Switch button below">
+      <figcaption>The switcher's own page, running on localhost. One profile is blurred.</figcaption>
+    </figure>
+
+    <section class="section" aria-labelledby="why">
+      <h2 id="why">Four tools, four separate sign-ins</h2>
+      <p class="section-intro">The GitHub CLI, git, GitHub Desktop and VS Code each keep their own GitHub login, and none of them follows the others. Moving to another account usually means signing out and back in four times, and signing out deletes the saved token. The switcher signs every account in once and swaps the saved sign-ins when you switch.</p>
+      <div class="table-scroll">
+        <table class="stores">
+          <thead>
+            <tr><th scope="col">Tool</th><th scope="col">Where its login lives</th><th scope="col">What a switch does</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>GitHub CLI</td><td>Credential Manager <code>gh:github.com:&lt;user&gt;</code></td><td><code>gh auth switch</code></td></tr>
+            <tr><td>Git</td><td>Credential Manager <code>git:https://github.com</code> and the global git config</td><td>Restores that account's token, sets <code>user.name</code>, <code>user.email</code> and Git Credential Manager's default account</td></tr>
+            <tr><td>GitHub Desktop</td><td><code>%APPDATA%\GitHub Desktop\Local Storage</code> and Credential Manager</td><td>Swaps in the account's saved <code>Local Storage</code> and restores its token</td></tr>
+            <tr><td>VS Code</td><td><code>~\.vscode-shared\sharedStorage\state.vscdb</code>, encrypted by VS Code</td><td>Writes back the account's saved session, still encrypted</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="features">
+      <h2 id="features">What it does</h2>
+      <dl class="features">
+        <div class="feature"><dt>Shows where you are signed in</dt><dd>The active account, and which account each tool really uses, with mismatches flagged.</dd></div>
+        <div class="feature"><dt>Switches in one click</dt><dd>Confirm once. A log shows every step the switcher took.</dd></div>
+        <div class="feature"><dt>Never signs you out</dt><dd>Tokens are backed up and restored inside Windows Credential Manager. App sign-ins are moved aside, never deleted.</dd></div>
+        <div class="feature"><dt>Stays on your PC</dt><dd>A localhost server with a key that changes every run. Tokens are never shown, logged or sent anywhere.</dd></div>
+        <div class="feature"><dt>Closes apps the normal way</dt><dd>GitHub Desktop and VS Code close as if you closed them, so unsaved-work prompts still appear. Then they reopen.</dd></div>
+        <div class="feature"><dt>Walks you through adding an account</dt><dd>Prepare the apps, sign in to each tool with live status, save. Progress survives a page refresh.</dd></div>
+      </dl>
+    </section>
+
+    <section class="section" id="start" aria-labelledby="start-title">
+      <h2 id="start-title">Quick start</h2>
+      <p class="section-intro">You need:</p>
+      <ul class="reqs">
+        <li>Windows 10 or 11 with Windows PowerShell 5.1</li>
+        <li>Git for Windows with Git Credential Manager, and the GitHub CLI 2.40 or later</li>
+        <li>Python 3 on <code>PATH</code> for the VS Code part (standard library only)</li>
+        <li>Node.js 18 or later, only to build the page once</li>
+      </ul>
+      <ol class="steps">
+        <li>
+          <h3>Get the code</h3>
+          <div class="code"><pre id="code-clone">git clone https://github.com/sale-shubham/github-account-switcher.git
+cd github-account-switcher</pre><button type="button" class="btn btn-secondary btn-small" data-copy="code-clone">Copy</button></div>
+        </li>
+        <li>
+          <h3>Build the page once</h3>
+          <div class="code"><pre id="code-build">cd web
+npm install
+npm run build
+cd ..</pre><button type="button" class="btn btn-secondary btn-small" data-copy="code-build">Copy</button></div>
+        </li>
+        <li>
+          <h3>Start the switcher</h3>
+          <div class="code"><pre id="code-run">.\switch-github.ps1 -Ui</pre><button type="button" class="btn btn-secondary btn-small" data-copy="code-run">Copy</button></div>
+          <p>Your browser opens the switcher. Keep the PowerShell window open while you use it.</p>
+        </li>
+        <li>
+          <h3>Add each account</h3>
+          <p>Click <strong>Add account</strong> and follow the four steps. Do it once per account. After that, switching is one click.</p>
+        </li>
+      </ol>
+
+      <div class="cli">
+        <h3>Prefer the command line?</h3>
+        <div class="code"><pre id="code-cli">.\switch-github.ps1                # show the current state and saved profiles
+.\switch-github.ps1 work           # switch everything to the profile 'work'
+.\switch-github.ps1 -Save work     # save what is signed in now as 'work'
+.\switch-github.ps1 -Clear         # sign Desktop and VS Code out safely, to add an account</pre><button type="button" class="btn btn-secondary btn-small" data-copy="code-cli">Copy</button></div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="faq">
+      <h2 id="faq">Questions</h2>
+      <div class="faq">
+        <details>
+          <summary>How do I use two GitHub accounts on one Windows PC?</summary>
+          <p>Add each account once with <strong>Add account</strong> in the switcher (or <code>-Save</code> on the command line). After that, one <strong>Switch</strong> moves the GitHub CLI, git, GitHub Desktop and VS Code to the other account.</p>
+        </details>
+        <details>
+          <summary>Does gh auth switch also change the account git pushes with?</summary>
+          <p>Not with Git Credential Manager, the Git for Windows default. <code>gh auth switch</code> changes only the GitHub CLI. Git keeps pushing with the account saved in Git Credential Manager, and commits keep the old <code>user.name</code> and <code>user.email</code>. The switcher changes all three.</p>
+        </details>
+        <details>
+          <summary>How do I switch GitHub accounts in GitHub Desktop or VS Code without signing out?</summary>
+          <p>Signing out deletes the saved token, so you sign in from scratch every time. The switcher closes the app normally, swaps in the sign-in it saved for that account, and reopens it.</p>
+        </details>
+        <details>
+          <summary>Is it safe? Where are my tokens?</summary>
+          <p>Tokens stay in Windows Credential Manager, encrypted for your Windows user. The switcher runs on localhost only, with a key that changes every run, and never shows a token.</p>
+        </details>
+        <details>
+          <summary>Does it work on macOS or Linux?</summary>
+          <p>No. It is built on Windows Credential Manager and the Windows app data folders.</p>
+        </details>
+        <details>
+          <summary>Does it handle SSH keys or GitHub Enterprise?</summary>
+          <p>No. It covers HTTPS sign-ins on github.com. SSH keys and GitHub Enterprise Server hosts are not switched.</p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <p>GitHub Account Switcher is a free tool by <a href="https://github.com/sale-shubham">sale-shubham</a>. It is not affiliated with GitHub.</p>
+    <nav class="foot-links" aria-label="Project links">
+      <a href="https://github.com/sale-shubham/github-account-switcher">Source code</a>
+      <a href="https://github.com/sale-shubham/github-account-switcher/blob/main/readme/ARCHITECTURE.md">How it works</a>
+      <a href="https://github.com/sale-shubham/github-account-switcher/issues">Report a problem</a>
+    </nav>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var board = document.querySelector('.board');
+  if (board) {
+    var radios = Array.prototype.slice.call(board.querySelectorAll('[role="radio"]'));
+    var sockets = board.querySelector('.sockets');
+    var accounts = board.querySelectorAll('[data-account]');
+    var status = document.getElementById('board-status');
+    var select = function (button, focus) {
+      radios.forEach(function (radio) {
+        var on = radio === button;
+        radio.setAttribute('aria-checked', on ? 'true' : 'false');
+        radio.tabIndex = on ? 0 : -1;
+        radio.parentNode.classList.toggle('is-on', on);
+      });
+      if (focus) button.focus();
+      var login = '@' + button.getAttribute('data-login');
+      Array.prototype.forEach.call(accounts, function (el) { el.textContent = login; });
+      // Restart the line animation for the new account.
+      sockets.classList.remove('rewire');
+      void sockets.offsetWidth;
+      sockets.classList.add('rewire');
+      status.textContent = 'All four tools now use ' + login + '.';
+    };
+    radios.forEach(function (radio, i) {
+      radio.addEventListener('click', function () {
+        if (radio.getAttribute('aria-checked') !== 'true') select(radio, false);
+      });
+      radio.addEventListener('keydown', function (event) {
+        var step = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1
+          : event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 0;
+        if (!step) return;
+        event.preventDefault();
+        select(radios[(i + step + radios.length) % radios.length], true);
+      });
+    });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'), function (button) {
+    if (!navigator.clipboard) { button.hidden = true; return; }
+    button.addEventListener('click', function () {
+      var text = document.getElementById(button.getAttribute('data-copy')).textContent;
+      navigator.clipboard.writeText(text).then(function () {
+        button.textContent = 'Copied';
+        setTimeout(function () { button.textContent = 'Copy'; }, 1600);
+      }, function () {
+        button.textContent = 'Select and copy';
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>

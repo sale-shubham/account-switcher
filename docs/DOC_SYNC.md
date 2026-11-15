@@ -20,6 +20,7 @@ Same doc-sync policy as the author's other repositories, with this project's fil
 | `$desktopStorage`, `$desktopExe`, `Get-DesktopLogin`, `Stop-App`, `Start-Apps`, `Invoke-WithAppsClosed`, `Copy-Folder` | `readme/methods/desktop-state.md` |
 | `accounts.json`, `$dataDir` layout, `$loginPattern`, `Get-Account`, `Set-AccountProfile`, `Remove-AccountProfile`, `Get-ActiveProfile`, `Get-LoginState`, `Get-SwitcherStatus`, `Show-Status` | `readme/methods/profiles.md` |
 | Storage locations, lifecycle, limitations | `readme/ARCHITECTURE.md` |
+| `docs/index.html` (public GitHub Pages site) | `README.md` - the site repeats its facts |
 
 ## Additions trigger
 
@@ -49,6 +50,7 @@ Same doc-sync policy as the author's other repositories, with this project's fil
 | App close timeout / close method | `readme/methods/desktop-state.md` (`Stop-App`) |
 | `vscode_secret.py` exit codes | `readme/methods/vscode-session.md` + the PowerShell callers |
 | A tool version re-verified | `PROJECT_STRUCTURE.md` tool versions |
+| `README.md` features, requirements, quick start, CLI usage or FAQ | `docs/index.html` (public site) + `<lastmod>` in `docs/sitemap.xml` |
 
 ## Removals trigger
 
@@ -68,7 +70,8 @@ Same doc-sync policy as the author's other repositories, with this project's fil
 - **Every doc carries a `*Last updated:*` footer** with a one-line reason, newest first.
 
 ---
-*Last updated: 2026-11-15 (Remove-AccountProfile row)*
+*Last updated: 2026-11-15 (public site docs/index.html rows)*
+*Previously: 2026-11-15 (Remove-AccountProfile row)*
 *Previously: 2026-11-14 (web UI + API replace the login window)*
 *Previously: 2026-10-30 (core split + login window rows)*
 *Previously: 2026-10-30 (initial doc structure)*

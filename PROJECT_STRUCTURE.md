@@ -54,9 +54,14 @@ multiple-github-account/
 │       ├── desktop-state.md             # Desktop Local Storage, Stop-App, Start-Apps
 │       ├── profiles.md                  # accounts.json, data dir, status functions
 │       └── ui-server.md                 # API server, token, routes, React client map
-├── docs/
+├── docs/                                # also the GitHub Pages site (served from main /docs)
 │   ├── DOC_SYNC.md                      # MANDATORY doc-sync matrix
-│   └── screenshot.png                   # README screenshot (work profile blurred)
+│   ├── index.html                       # public site: SEO landing page, self-contained HTML/CSS/JS
+│   ├── sitemap.xml, robots.txt          # for search engines
+│   ├── og-image.png                     # 1280x640 link preview (also for the repo's social preview)
+│   ├── favicon.svg                      # copy of web/public/favicon.svg
+│   ├── .nojekyll                        # Pages serves the files as they are (no Jekyll)
+│   └── screenshot.png                   # README + site screenshot (work profile blurred)
 ├── .gitignore
 └── .claudeignore
 ```
@@ -109,7 +114,8 @@ Credential Manager: github-switch:<profile>:<original target>   # token backups
 - No committed `web/dist` — build it once with `npm run build`
 
 ---
-*Last updated: 2026-11-15 (Remove-AccountProfile; docs/screenshot.png for the README)*
+*Last updated: 2026-11-15 (GitHub Pages site in docs/)*
+*Previously: 2026-11-15 (Remove-AccountProfile; docs/screenshot.png for the README)*
 *Previously: 2026-11-14 (React web UI + switch-github-ui.ps1 replace the WinForms window)*
 *Previously: 2026-10-30 (core split out of switch-github.ps1; -Login window added)*
 *Previously: 2026-10-30 (initial Claude setup)*

@@ -50,6 +50,8 @@ Use after any code change to ensure READMEs are in sync. Full matrix: `docs/DOC_
 - **A known limitation fixed** → remove it from `readme/ARCHITECTURE.md` and `CLAUDE.md` in the same change.
 - **A tool version re-verified** → `PROJECT_STRUCTURE.md` tool versions.
 - **A field added to `Get-SwitcherStatus` or an API route** → `web/src/api.ts` types + `readme/methods/ui-server.md`.
+- **README features, requirements, quick start, CLI usage or FAQ changed** → the public site
+  `docs/index.html` says the same things; update it and `<lastmod>` in `docs/sitemap.xml`.
 
 ## Flow README template (for `readme/flows/`)
 

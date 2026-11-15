@@ -141,6 +141,7 @@ Full list: [`readme/ARCHITECTURE.md`](./readme/ARCHITECTURE.md), "Known limitati
 
 | Doc | Covers |
 |---|---|
+| [Website](https://sale-shubham.github.io/github-account-switcher/) | Project page with a live demo of a switch |
 | [`readme/ARCHITECTURE.md`](./readme/ARCHITECTURE.md) | Where each app stores its login, switch lifecycle, security, known limitations |
 | [`readme/RESEARCH.md`](./readme/RESEARCH.md) | Existing tools surveyed and why they fall short |
 | [`readme/flows/`](./readme/flows/) | Switch, save, clear, and the web UI, step by step |

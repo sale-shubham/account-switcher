@@ -33,6 +33,7 @@ All READMEs live in the `readme/` directory at the project root.
 | `readme/ARCHITECTURE.md` | Where each app stores its login, components, switch lifecycle, known limitations |
 | `readme/RESEARCH.md` | Survey of existing switcher tools (2026-10-30) and why this project exists |
 | `docs/DOC_SYNC.md` | **MANDATORY** — which docs to update when adding / modifying / removing code |
+| `docs/index.html` | Public GitHub Pages site (SEO landing page, served from `main` `/docs`); repeats README facts, so it changes with them |
 
 ### Folder-based documentation
 
