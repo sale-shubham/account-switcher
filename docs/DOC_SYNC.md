@@ -22,6 +22,7 @@ Same doc-sync policy as the author's other repositories, with this project's fil
 | `$desktopStorage`, `$desktopExe`, `Get-DesktopLogin`, `Stop-App`, `Start-Apps`, `Invoke-WithAppsClosed`, `Copy-Folder` | `readme/methods/desktop-state.md` |
 | `accounts.json`, `$dataDir` layout, `$loginPattern`, `Get-GitHubProfile`, `Set-GitHubProfile`, `Remove-GitHubProfile`, `Get-GitHubActiveProfile`, `Get-GitHubLoginState`, `Get-GitHubStatus`, `Show-GitHubStatus` | `readme/methods/profiles.md` |
 | Storage locations, lifecycle, limitations | `readme/ARCHITECTURE.md` |
+| `docs/index.html` (public GitHub Pages site) | `README.md` - the site repeats its facts |
 
 ## Additions trigger
 
@@ -52,6 +53,7 @@ Same doc-sync policy as the author's other repositories, with this project's fil
 | `vscode_secret.py` exit codes | `readme/methods/vscode-session.md` + the PowerShell callers |
 | Claude Code file layout (`.credentials.json` / `.claude.json` keys) or `claude_account.py` actions | `readme/methods/claude-state.md` + `readme/ARCHITECTURE.md` storage map + `CLAUDE.md` hard rule 16 |
 | A tool version re-verified | `PROJECT_STRUCTURE.md` tool versions |
+| `README.md` features, requirements, quick start, CLI usage or FAQ | `docs/index.html` (public site, including its FAQ JSON-LD) + `<lastmod>` in `docs/sitemap.xml` |
 
 ## Removals trigger
 
@@ -71,7 +73,8 @@ Same doc-sync policy as the author's other repositories, with this project's fil
 - **Every doc carries a `*Last updated:*` footer** with a one-line reason, newest first.
 
 ---
-*Last updated: 2026-11-15 (account-switcher: Claude Code rows, lib/ paths, tool-family addition; site rows dropped)*
+*Last updated: 2026-11-15 (public site docs/index.html rows for account-switcher)*
+*Previously: 2026-11-15 (account-switcher: Claude Code rows, lib/ paths, tool-family addition; site rows dropped)*
 *Previously: 2026-11-15 (public site docs/index.html rows)*
 *Previously: 2026-11-15 (Remove-GitHubProfile row)*
 *Previously: 2026-11-14 (web UI + API replace the login window)*

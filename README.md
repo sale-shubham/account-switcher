@@ -9,6 +9,7 @@ Switch the account your developer tools use, **one click per tool**, with no sig
   account (Pro, Max, Team) and switch between them without `/login` every time.
 
 It has a local web dashboard and a one-line CLI. More tools can be added the same way.
+Project page: [sale-shubham.github.io/account-switcher](https://sale-shubham.github.io/account-switcher/).
 
 ![Account Switcher dashboard: a GitHub card with the active profile linked to GitHub CLI, Git, GitHub Desktop and VS Code, and a Claude Code card with the signed-in account, plan and other saved accounts (demo data)](docs/screenshot.png)
 
@@ -171,6 +172,7 @@ Full list: [`readme/ARCHITECTURE.md`](./readme/ARCHITECTURE.md), "Known limitati
 | [`readme/flows/`](./readme/flows/) | GitHub and Claude Code switch, save, sign-out, and the web UI, step by step |
 | [`readme/methods/`](./readme/methods/) | Credential store, VS Code session, Desktop state, GitHub profiles, Claude Code state, UI server + API |
 | [`PROJECT_STRUCTURE.md`](./PROJECT_STRUCTURE.md) | File tree, module map, tool versions |
+| [Website](https://sale-shubham.github.io/account-switcher/) | Project page with a live demo of a switch |
 | [`CLAUDE.md`](./CLAUDE.md), [`docs/DOC_SYNC.md`](./docs/DOC_SYNC.md) | How the docs are kept in sync with the code |
 
 ## License

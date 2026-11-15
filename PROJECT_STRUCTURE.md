@@ -67,9 +67,14 @@ account-switcher/
 │       ├── profiles.md                  # GitHub accounts.json, data dir, status functions
 │       ├── claude-state.md              # Claude Code files, profiles, claude_account.py
 │       └── ui-server.md                 # API server, token, routes, React client map
-├── docs/
+├── docs/                                # also the GitHub Pages site (served from main /docs)
 │   ├── DOC_SYNC.md                      # MANDATORY doc-sync matrix
-│   └── screenshot.png                   # README screenshot (made-up demo data)
+│   ├── index.html                       # public site: SEO landing page, self-contained HTML/CSS/JS
+│   ├── sitemap.xml, robots.txt          # for search engines
+│   ├── og-image.png                     # 1280x640 link preview (also for the repo's social preview)
+│   ├── favicon.svg                      # site icon (same mark as web/public/favicon.svg)
+│   ├── .nojekyll                        # Pages serves the files as they are (no Jekyll)
+│   └── screenshot.png                   # README + site screenshot (made-up demo data)
 ├── .gitignore
 └── .claudeignore
 ```
@@ -129,7 +134,8 @@ Credential Manager: account-switch:claude:<profile>              # Claude Code s
 - No committed `web/dist` — build it once with `npm run build`
 
 ---
-*Last updated: 2026-11-15 (account-switcher: lib/ layout, Claude Code family, dashboard components)*
+*Last updated: 2026-11-15 (GitHub Pages site for account-switcher in docs/)*
+*Previously: 2026-11-15 (account-switcher: lib/ layout, Claude Code family, dashboard components)*
 *Previously: 2026-11-15 (MIT LICENSE)*
 *Previously: 2026-11-15 (GitHub Pages site in docs/ — not carried into this repo)*
 *Previously: 2026-11-15 (Remove-AccountProfile; docs/screenshot.png for the README)*

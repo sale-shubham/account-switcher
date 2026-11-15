@@ -57,6 +57,8 @@ Use after any code change to ensure READMEs are in sync. Full matrix: `docs/DOC_
 - **Claude Code moved its files or keys** → `lib/claude.ps1` variables, `readme/methods/claude-state.md`,
   `readme/ARCHITECTURE.md` storage map and `CLAUDE.md` hard rule 16.
 - **A new tool family** → `readme/ARCHITECTURE.md` "Adding a tool family" lists every place.
+- **README features, requirements, quick start, CLI or FAQ changed** → the public site
+  `docs/index.html` says the same things (FAQ also in its JSON-LD); update it and `<lastmod>` in `docs/sitemap.xml`.
 
 ## Flow README template (for `readme/flows/`)
 
