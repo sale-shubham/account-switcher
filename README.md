@@ -9,8 +9,7 @@ a one-line CLI.
 Each of these tools keeps its own GitHub sign-in, and none of them follows the others. Moving
 from a work account to a personal one usually means signing out and back in four times. Signing
 out also deletes the saved token. This tool signs every account in once, keeps each account's
-sign-ins safe, and puts them back when you switch. No existing tool covered all four; see
-[`readme/RESEARCH.md`](./readme/RESEARCH.md).
+sign-ins safe, and puts them back when you switch.
 
 ## Features
 
