@@ -8,6 +8,7 @@ multiple-github-account/
 ├── CLAUDE.md                            # Root intelligence hub + README registry
 ├── PROJECT_STRUCTURE.md                 # This file
 ├── README.md                            # Overview, how it works, quick start, CLI usage
+├── LICENSE                              # MIT
 ├── switch-github.ps1                    # CLI entry point — parameters, dispatch
 ├── switch-github-core.ps1               # Shared state + functions, CredStore (inline C#)
 ├── switch-github-ui.ps1                 # -Ui: HttpListener server, API routes, static files
@@ -114,7 +115,8 @@ Credential Manager: github-switch:<profile>:<original target>   # token backups
 - No committed `web/dist` — build it once with `npm run build`
 
 ---
-*Last updated: 2026-11-15 (GitHub Pages site in docs/)*
+*Last updated: 2026-11-15 (MIT LICENSE)*
+*Previously: 2026-11-15 (GitHub Pages site in docs/)*
 *Previously: 2026-11-15 (Remove-AccountProfile; docs/screenshot.png for the README)*
 *Previously: 2026-11-14 (React web UI + switch-github-ui.ps1 replace the WinForms window)*
 *Previously: 2026-10-30 (core split out of switch-github.ps1; -Login window added)*

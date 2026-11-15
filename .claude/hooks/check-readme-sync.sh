@@ -18,8 +18,9 @@ if printf '%s' "$input" | grep -q '"stop_hook_active"[[:space:]]*:[[:space:]]*tr
   exit 0
 fi
 
-# Source-code edits this session (exclude docs and .claude/).
+# Source-code edits this session (exclude docs, .claude/, and throwaway scripts in the temp scratchpad).
 code=$(grep -Ev '[/\\](readme|docs|\.claude|node_modules|dist)[/\\]' "$log" \
+  | grep -Evi '[/\\]AppData[/\\]+Local[/\\]+Temp[/\\]' \
   | grep -Ei '\.(ps1|py|ts|tsx|css)$' \
   | sort -u)
 # readme/ docs touched this session.

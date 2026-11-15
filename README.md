@@ -148,3 +148,7 @@ Full list: [`readme/ARCHITECTURE.md`](./readme/ARCHITECTURE.md), "Known limitati
 | [`readme/methods/`](./readme/methods/) | Credential store, VS Code session, Desktop state, profiles, UI server + API |
 | [`PROJECT_STRUCTURE.md`](./PROJECT_STRUCTURE.md) | File tree, module map, tool versions |
 | [`CLAUDE.md`](./CLAUDE.md), [`docs/DOC_SYNC.md`](./docs/DOC_SYNC.md) | How the docs are kept in sync with the code |
+
+## License
+
+[MIT](./LICENSE)
