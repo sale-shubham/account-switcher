@@ -791,6 +791,12 @@ dialog::backdrop {
   color: var(--ok);
 }
 
+.drawer-note {
+  margin: 12px 28px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .drawer-body {
   flex: 1;
   overflow-y: auto;

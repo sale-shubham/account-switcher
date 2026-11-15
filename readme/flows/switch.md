@@ -43,6 +43,7 @@ by `Switch-Profile` in `switch-github-core.ps1`.
 |---|---|
 | Unknown profile / missing field | `throw` before anything is touched |
 | An app does not close within 20 s | `throw` before gh runs; apps already closed are reopened |
+| Run from VS Code's terminal while VS Code is running (and the profile has a VS Code snapshot) | `throw` from `Invoke-WithAppsClosed` before anything closes - closing VS Code would kill the script halfway |
 | gh has no login for the user | `throw` before tokens, git config or app state change; apps reopened |
 | `CredWriteW` fails | `Win32Exception` — git config / app state may be unchanged or partly changed; rerun the switch |
 | `vscode_secret.py set` fails | `throw` after Desktop swapped; rerun the switch |
@@ -56,7 +57,8 @@ by `Switch-Profile` in `switch-github-core.ps1`.
 - `_previous` keeps only the last replaced state.
 
 ---
-*Last updated: 2026-11-14 (Switch button now in the -Ui web page)*
+*Last updated: 2026-11-15 (refuses to run from VS Code's terminal when VS Code must close)*
+*Previously: 2026-11-14 (Switch button now in the -Ui web page)*
 *Previously: 2026-11-14 (git config step is now Set-GitIdentity, shared with Save)*
 *Previously: 2026-10-30 (moved into Switch-Profile in switch-github-core.ps1; app close via Invoke-WithAppsClosed)*
 *Previously: 2026-10-30 (initial flow doc)*

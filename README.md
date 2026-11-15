@@ -69,7 +69,9 @@ cd ..
 .\switch-github.ps1 -Ui
 ```
 
-The browser opens the switcher. Keep the PowerShell window open while you use it.
+The browser opens the switcher. Keep the PowerShell window open while you use it. Run it from a
+normal PowerShell window: started from VS Code's terminal it reopens itself in its own window,
+because a switch closes VS Code and everything running inside it.
 
 **Add your first account:** click **Add account** and follow the four steps. To add more, repeat
 them; the current account is saved before the apps are signed out.

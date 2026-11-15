@@ -4,6 +4,11 @@
 
 $uiPort = 47821
 $uiRoot = Join-Path $PSScriptRoot 'web\dist'
+$uiWindowTitle = 'Account Switcher server - keep open, Ctrl+C to stop'
+# A newer -Ui sets this event; the running server sees it between requests and hands over the port.
+$uiStopEventName = 'Local\GitHubAccountSwitcherUi-Stop'
+# Long enough for a running switch to finish (two apps closing at up to 20 s each).
+$uiTakeoverSeconds = 90
 $uiTypes = @{
     '.html'  = 'text/html; charset=utf-8'
     '.js'    = 'text/javascript; charset=utf-8'
@@ -66,11 +71,10 @@ function Start-ToolSignIn($tool, $user) {
             Write-Host 'GitHub Desktop is open: click "Sign in to GitHub.com".'
         }
         'vscode' {
-            if (-not (Get-Process Code -ErrorAction SilentlyContinue)) {
-                if (-not $vscodeExe) { throw 'VS Code not found (no "code" on PATH).' }
-                Start-Process $vscodeExe
-            }
-            Write-Host 'VS Code is open: Accounts icon (bottom left) > "Sign in with GitHub".'
+            if (-not $vscodeExe) { throw 'VS Code not found (no "code" on PATH).' }
+            # --reuse-window: a running VS Code gets the request in its last window instead of opening a new one.
+            Start-Process $vscodeExe -ArgumentList '--reuse-window'
+            Write-Host 'VS Code: click the Accounts icon at the bottom of the left bar, sign in with GitHub, then approve in the browser.'
         }
         default { throw "Unknown tool '$tool'." }
     }
@@ -174,11 +178,51 @@ function Invoke-UiRequest($context, $token) {
     Send-UiFile $context $request.Url.AbsolutePath
 }
 
+# Starts listening. If another switcher UI holds the port, signals it to stop - it finishes any
+# running action first - and keeps retrying for up to $uiTakeoverSeconds.
+function Open-UiListener($stopEvent) {
+    $deadline = (Get-Date).AddSeconds($uiTakeoverSeconds)
+    $asked = $false
+    while ($true) {
+        $listener = New-Object Net.HttpListener
+        $listener.Prefixes.Add("http://localhost:$uiPort/")
+        try { $listener.Start(); return $listener } catch { $listener.Close() }
+        if (-not $asked) {
+            Write-Host 'Another switcher UI is running. Asking it to stop (it finishes any running action first)...'
+            $null = $stopEvent.Set()
+            $asked = $true
+        }
+        if ((Get-Date) -gt $deadline) {
+            throw "Port $uiPort is still in use. Close the other switcher window (title '$uiWindowTitle', or an older 'Windows PowerShell' one) with Ctrl+C, then run this again."
+        }
+        Start-Sleep -Milliseconds 500
+    }
+}
+
 function Start-UiServer {
+    # Prepare / Save / Switch close VS Code, which ends every process in its terminals - this server
+    # included, mid-action. Started from there, reopen in a PowerShell window of its own instead.
+    if ($env:TERM_PROGRAM -eq 'vscode') {
+        $cli = Join-Path $PSScriptRoot 'switch-github.ps1'
+        $saved = $env:TERM_PROGRAM
+        $env:TERM_PROGRAM = $null
+        try { Start-Process powershell.exe -ArgumentList '-NoProfile', '-NoExit', '-File', "`"$cli`"", '-Ui' } finally { $env:TERM_PROGRAM = $saved }
+        Write-Host 'The UI server opened in its own PowerShell window, because closing VS Code during a switch would stop it here.'
+        Write-Host 'Keep that window open while you use the UI. This terminal is free.'
+        return
+    }
+
     $token = New-UiToken
-    $listener = New-Object Net.HttpListener
-    $listener.Prefixes.Add("http://localhost:$uiPort/")
-    try { $listener.Start() } catch { throw "Port $uiPort is in use. Is the switcher UI already running in another window?" }
+    $stopEvent = New-Object Threading.EventWaitHandle($false, [Threading.EventResetMode]::ManualReset, $uiStopEventName)
+    try {
+        $listener = Open-UiListener $stopEvent
+    } catch {
+        $stopEvent.Dispose()
+        throw
+    }
+    $null = $stopEvent.Reset()
+    # A server reopened from VS Code's terminal runs in a plain "Windows PowerShell" window; name it so it can be found.
+    try { $Host.UI.RawUI.WindowTitle = $uiWindowTitle } catch { }
 
     $url = "http://localhost:$uiPort/?t=$token"
     if (Test-Path (Join-Path $uiRoot 'index.html')) {
@@ -193,8 +237,14 @@ function Start-UiServer {
     try {
         while ($listener.IsListening) {
             $pending = $listener.BeginGetContext($null, $null)
-            # Wait in short slices so Ctrl+C can stop the loop between them.
-            while (-not $pending.AsyncWaitHandle.WaitOne(500)) { }
+            # Wait in short slices so Ctrl+C can stop the loop between them. Index 1 = a newer start asked
+            # this server to hand over the port; it is only checked here, between requests.
+            $handles = [Threading.WaitHandle[]]@($pending.AsyncWaitHandle, $stopEvent)
+            do { $signal = [Threading.WaitHandle]::WaitAny($handles, 500) } while ($signal -eq [Threading.WaitHandle]::WaitTimeout)
+            if ($signal -eq 1) {
+                Write-Host 'A newer switcher UI was started, so this one stopped. You can close this window.'
+                break
+            }
             $context = $listener.EndGetContext($pending)
             try {
                 Invoke-UiRequest $context $token
@@ -205,5 +255,6 @@ function Start-UiServer {
         }
     } finally {
         $listener.Close()
+        $stopEvent.Dispose()
     }
 }

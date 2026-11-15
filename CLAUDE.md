@@ -150,8 +150,6 @@ incidentally — they are known, and removing them means updating the docs that 
 - No save-back: a switch restores the snapshot taken at `-Save` time
 - The web UI's VS Code row shows only whether *a* session exists, not whose
 - Desktop's repository list is shared by all profiles (background fetch of a repo the active account cannot see logs "Repository not found")
-- The web UI's Prepare / Save profile / Switch have not been run against real apps yet (as of 2026-11-14); the same core operations were verified through the old window
-
 ---
 
 ## Rules reference

@@ -251,6 +251,10 @@ function Start-Apps($exes) {
 
 # Runs $Action with GitHub Desktop and/or VS Code closed, then reopens whichever were running - also after a failure.
 function Invoke-WithAppsClosed([scriptblock]$Action, [bool]$Desktop = $true, [bool]$VSCode = $true) {
+    # Closing VS Code ends every process in its terminals - this script too, halfway, with nothing reopened.
+    if ($VSCode -and $env:TERM_PROGRAM -eq 'vscode' -and (Get-Process Code -ErrorAction SilentlyContinue)) {
+        throw "This is running in VS Code's terminal, and closing VS Code would stop it halfway. Run it from a PowerShell window outside VS Code."
+    }
     $reopen = @()
     try {
         if ($Desktop) { $reopen += Stop-App GitHubDesktop 'GitHub Desktop' }

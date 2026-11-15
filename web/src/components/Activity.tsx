@@ -22,7 +22,7 @@ export function Activity({ entries }: { entries: ActivityEntry[] }) {
         <ol className="activity" aria-live="polite">
           {entries.map((entry, index) => (
             <li key={entry.id} className={`entry ${entry.ok ? 'entry-ok' : 'entry-failed'}`}>
-              <details open={index === 0}>
+              <details open={index === 0 || !entry.ok}>
                 <summary>
                   <span className="entry-dot" aria-hidden="true" />
                   <span className="entry-title">{entry.title}</span>

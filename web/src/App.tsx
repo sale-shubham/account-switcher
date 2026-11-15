@@ -6,6 +6,7 @@ import { AddAccount } from './components/AddAccount';
 import { ConfirmDialog, type ConfirmRequest } from './components/ConfirmDialog';
 import { Identity } from './components/Identity';
 import { Profiles } from './components/Profiles';
+import { loadDraft } from './draft';
 import { BrandMark, RefreshIcon } from './icons';
 
 function messageOf(error: unknown): string {
@@ -46,7 +47,8 @@ export function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null);
-  const [adding, setAdding] = useState(false);
+  // An unfinished add-account wizard (saved in localStorage) reopens after a refresh.
+  const [adding, setAdding] = useState(() => loadDraft() !== null);
   const [entries, setEntries] = useState<ActivityEntry[]>([]);
   const [rewired, setRewired] = useState(0);
   const lastActive = useRef<string | null>(null);

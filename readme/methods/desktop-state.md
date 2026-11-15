@@ -40,6 +40,12 @@ touches app storage (`Save-ProfileState`, `Clear-AppState`, `Switch-Profile`) ru
 action block sees the caller's variables (dynamic scope); avoid naming its variables `$Desktop`,
 `$VSCode` or `$Action`.
 
+When VS Code has to close and the script runs in VS Code's integrated terminal
+(`$env:TERM_PROGRAM -eq 'vscode'`) while VS Code is running, it `throw`s before closing anything:
+closing VS Code ends every process in its terminals, which would kill the script halfway with
+nothing reopened (seen 2026-11-15 with the UI server). `Start-UiServer` avoids this by reopening
+itself in its own window.
+
 ### `$desktopExe`
 `%LOCALAPPDATA%\GitHubDesktop\GitHubDesktop.exe` (the Squirrel launcher). The web UI's sign-in step starts
 it when Desktop is not running.
@@ -56,7 +62,8 @@ Deletes `$to` if present, creates its parent, copies `$from` recursively. All wi
 - Desktop is reopened from the path that was running (`%LOCALAPPDATA%\GitHubDesktop\app-3.6.x\GitHubDesktop.exe`).
 
 ---
-*Last updated: 2026-11-14 (sign-in step moved to the web UI)*
+*Last updated: 2026-11-15 (Invoke-WithAppsClosed refuses to close VS Code from VS Code's own terminal)*
+*Previously: 2026-11-14 (sign-in step moved to the web UI)*
 *Previously: 2026-11-14 (Get-DesktopLogin reads with FileShare.ReadWrite so it works while Desktop runs)*
 *Previously: 2026-10-30 (Invoke-WithAppsClosed + $desktopExe; code moved to switch-github-core.ps1)*
 *Previously: 2026-10-30 (initial methods doc)*

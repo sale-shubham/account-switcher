@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import type { ActionResult, LoginState, Status, ToolKey } from '../api';
 import { api, loginPattern, profilePattern } from '../api';
 import { CheckIcon, CloseIcon, toolIcons } from '../icons';
+import { clearDraft, emptyFields, loadDraft, saveDraft, type Fields } from '../draft';
 import { toolNames, toolOrder } from '../tools';
 import type { ConfirmRequest } from './ConfirmDialog';
 
@@ -19,16 +20,17 @@ const steps = ['Account details', 'Prepare the apps', 'Sign in to each tool', 'S
 const signInHelp: Record<ToolKey, string> = {
   gh: 'Opens a console and puts a one-time code on your clipboard. If it asks to authenticate Git with your GitHub credentials, answer n.',
   git: 'Opens the browser to sign Git Credential Manager in. Pushes from any tool use this login.',
-  desktop: 'Opens GitHub Desktop. Choose "Sign in to GitHub.com".',
-  vscode: 'Opens VS Code. Use the Accounts icon (bottom left), then "Sign in with GitHub".',
+  desktop: 'Opens GitHub Desktop. Choose "Sign in to GitHub.com", then approve in the browser.',
+  vscode: 'Opens VS Code. Click the Accounts icon at the bottom of the left bar, sign in with GitHub, then approve in the browser.',
 };
 
-interface Fields {
-  profile: string;
-  user: string;
-  gitName: string;
-  email: string;
-}
+// gh and git start the sign-in themselves; Desktop and VS Code can only be opened - you sign in inside the app.
+const signInLabel: Record<ToolKey, string> = {
+  gh: 'Sign in',
+  git: 'Sign in',
+  desktop: 'Open Desktop',
+  vscode: 'Open VS Code',
+};
 
 function validate(fields: Fields): Partial<Record<keyof Fields, string>> {
   const errors: Partial<Record<keyof Fields, string>> = {};
@@ -42,21 +44,35 @@ function validate(fields: Fields): Partial<Record<keyof Fields, string>> {
 // Add-account wizard: details, prepare (sign the apps out safely), sign in to each tool, save.
 export function AddAccount({ status, run, confirm, onClose }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
-  const [step, setStep] = useState(0);
-  const [fields, setFields] = useState<Fields>({ profile: '', user: '', gitName: '', email: '' });
+  const [restored] = useState(loadDraft);
+  const [step, setStep] = useState(restored?.step ?? 0);
+  const [fields, setFields] = useState<Fields>(restored?.fields ?? emptyFields);
   const [touched, setTouched] = useState(false);
-  const [prepared, setPrepared] = useState(false);
+  const [preparedFor, setPreparedFor] = useState(restored?.preparedFor ?? '');
   const [logins, setLogins] = useState<LoginState | null>(null);
+  const saved = useRef(false);
 
   const errors = validate(fields);
   const detailsValid = Object.keys(errors).length === 0;
   const replacing = status.profiles.some((p) => p.name === fields.profile);
   const activeProfile = status.profiles.find((p) => p.name === status.activeProfile);
+  const prepared = preparedFor !== '' && preparedFor === fields.user;
 
   useEffect(() => {
     const dialog = ref.current;
     if (dialog && !dialog.open) dialog.showModal();
   }, []);
+
+  // Keep progress across a refresh until the profile is saved or the wizard is cancelled.
+  useEffect(() => {
+    if (saved.current) return;
+    if (step > 0 || Object.values(fields).some((v) => v !== '')) saveDraft({ step, fields, preparedFor });
+  }, [step, fields, preparedFor]);
+
+  const cancel = () => {
+    clearDraft();
+    ref.current?.close();
+  };
 
   // While the sign-in step is open, check the four tools every few seconds.
   useEffect(() => {
@@ -95,8 +111,9 @@ export function AddAccount({ status, run, confirm, onClose }: Props) {
         : 'No profile is active, so the current sign-ins are kept aside in a backup folder. Then GitHub Desktop and VS Code close, start again signed out, and reopen. Save your work in them first.',
       confirmLabel: 'Prepare apps',
       onConfirm: async () => {
+        const user = fields.user;
         const result = await run('Prepare apps', 'Closing GitHub Desktop and VS Code', api.prepare);
-        if (result?.ok) setPrepared(true);
+        if (result?.ok) setPreparedFor(user);
       },
     });
 
@@ -107,7 +124,11 @@ export function AddAccount({ status, run, confirm, onClose }: Props) {
       confirmLabel: 'Save profile',
       onConfirm: async () => {
         const result = await run(`Save profile ${fields.profile}`, 'Saving sign-ins', () => api.save(fields));
-        if (result?.ok) ref.current?.close();
+        if (result?.ok) {
+          saved.current = true;
+          clearDraft();
+          ref.current?.close();
+        }
       },
     });
 
@@ -134,7 +155,13 @@ export function AddAccount({ status, run, confirm, onClose }: Props) {
     <dialog ref={ref} className="drawer" onClose={onClose} aria-labelledby="add-title">
       <header className="drawer-head">
         <h2 id="add-title">Add an account</h2>
-        <button type="button" className="btn btn-icon" onClick={() => ref.current?.close()} aria-label="Close">
+        <button
+          type="button"
+          className="btn btn-icon"
+          onClick={() => ref.current?.close()}
+          aria-label="Close, your progress is kept"
+          title="Close, your progress is kept"
+        >
           <CloseIcon />
         </button>
       </header>
@@ -147,6 +174,7 @@ export function AddAccount({ status, run, confirm, onClose }: Props) {
           </li>
         ))}
       </ol>
+      {restored ? <p className="drawer-note">Picked up where you left off.</p> : null}
 
       <div className="drawer-body">
         {step === 0 ? (
@@ -168,6 +196,12 @@ export function AddAccount({ status, run, confirm, onClose }: Props) {
               Never use <strong>Sign out</strong> inside the apps. It deletes the saved login. Preparing moves it aside
               instead.
             </p>
+            {prepared ? null : (
+              <p>
+                Already signed in to all four tools as @{fields.user}? Skip this step. Preparing now would move those
+                sign-ins aside and you would sign in again.
+              </p>
+            )}
             {prepared ? (
               <p className="done-line">
                 <CheckIcon /> The apps are ready for @{fields.user}.
@@ -220,10 +254,14 @@ export function AddAccount({ status, run, confirm, onClose }: Props) {
                         type="button"
                         className="btn btn-secondary btn-small"
                         onClick={() =>
-                          void run(`Sign in to ${toolNames[tool].name}`, null, () => api.signIn(tool, fields.user))
+                          void run(
+                            `${tool === 'gh' || tool === 'git' ? 'Sign in to' : 'Open'} ${toolNames[tool].name}`,
+                            null,
+                            () => api.signIn(tool, fields.user),
+                          )
                         }
                       >
-                        Sign in
+                        {signInLabel[tool]}
                       </button>
                     ) : null}
                   </li>
@@ -243,12 +281,12 @@ export function AddAccount({ status, run, confirm, onClose }: Props) {
       </div>
 
       <footer className="drawer-foot">
-        <button type="button" className="btn btn-ghost" onClick={() => (step === 0 ? ref.current?.close() : setStep(step - 1))}>
+        <button type="button" className="btn btn-ghost" onClick={() => (step === 0 ? cancel() : setStep(step - 1))}>
           {step === 0 ? 'Cancel' : 'Back'}
         </button>
         {step < steps.length - 1 ? (
           <button type="button" className={`btn ${step === 1 && !prepared ? 'btn-secondary' : 'btn-primary'}`} onClick={next}>
-            {step === 1 && !prepared ? 'Skip, apps are signed out' : 'Next'}
+            {step === 1 && !prepared ? 'Skip this step' : 'Next'}
           </button>
         ) : null}
       </footer>

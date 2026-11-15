@@ -106,19 +106,21 @@ Full detail: `readme/flows/switch.md`.
   list picks up the result on its next 4 s check.
 - **The web UI needs `npm run build` once** (and after any change in `web/`); without `web\dist`
   the server prints the build command.
-- **The web UI's Prepare / Save profile / Switch have not been run against real apps yet (as of
-  2026-11-14).** They call the same core operations the verified run below used; status, sign-in
-  checks and failing actions are tested through the API.
 
-## Verified against real apps (2026-11-14)
+## Verified against real apps
 
-Second account added through the (since replaced) WinForms window: Prepare (save active profile +
-`Clear-AppState`), the four sign-ins, Save profile, then Switch between the two profiles, with
-VS Code and Desktop closed and reopened. A commit + push from VS Code worked as the new account
-(after the `Set-GitIdentity` fix in Save).
+- **2026-11-14** - second account added through the (since replaced) WinForms window: Prepare
+  (save active profile + `Clear-AppState`), the four sign-ins, Save profile, then Switch between
+  the two profiles, with VS Code and Desktop closed and reopened. A commit + push from VS Code
+  worked as the new account (after the `Set-GitIdentity` fix in Save).
+- **2026-11-15** - third account added through the web UI: Prepare, the four sign-ins, Save
+  profile (after a page refresh, resumed with "Skip this step"), then Switch back to an earlier
+  profile. Found and fixed on the way: a server started in VS Code's terminal died when Prepare
+  closed VS Code; wizard input was lost on refresh; a second `-Ui` could not take over the port.
 
 ---
-*Last updated: 2026-11-14 (web UI replaces the WinForms window: components, security, limitations)*
+*Last updated: 2026-11-15 (web UI verified against real apps; untested limitation removed)*
+*Previously: 2026-11-14 (web UI replaces the WinForms window: components, security, limitations)*
 *Previously: 2026-11-14 (real-app run done: untested limitation removed; shared Desktop repo list, app logs in console)*
 *Previously: 2026-10-30 (core split + login window components and limitations)*
 *Previously: 2026-10-30 (initial architecture doc from the build session)*

@@ -19,7 +19,13 @@ cd ..
 ```
 
 Without `web\dist` the server still starts and prints the build command plus a development link.
-Keep the PowerShell window open while the page is in use; Ctrl+C stops the server.
+Keep the PowerShell window open while the page is in use; Ctrl+C stops the server. Running `-Ui`
+again while one is open replaces it: the old server stops after any running action and the new
+one opens a fresh page (`readme/methods/ui-server.md`, "Taking over").
+
+Started from **VS Code's terminal**, `Start-UiServer` reopens itself in its own PowerShell window
+and returns: Prepare / Save / Switch close VS Code, which ends every process in its terminals, so a
+server running there would die mid-action and never reopen the apps.
 
 ## Page
 
@@ -41,21 +47,31 @@ profile replays the line animation once.
 2. **Prepare the apps** - confirm, then `POST /api/prepare`:
    `Invoke-WithAppsClosed { Save-ProfileState <active>; Clear-AppState }`. The current sign-in is
    saved into the active profile (if one is known), then Desktop and VS Code start signed out
-   (`readme/flows/clear.md`). **Skip** is offered for when the apps are already signed out.
+   (`readme/flows/clear.md`). **Skip this step** is for when the apps are already signed out, or
+   already signed in as the new account (e.g. after a refresh) - preparing again would move those
+   new sign-ins aside. The step counts as done only for the login it was run for, so changing the
+   GitHub username offers Prepare again.
 3. **Sign in to each tool** - sign in to github.com in the browser as the new account first. Each
-   **Sign in** button calls `POST /api/signin` (`Start-ToolSignIn`):
+   row's button (**Sign in** for GitHub CLI and Git, **Open Desktop** / **Open VS Code** for the apps,
+   where you sign in inside the app) calls `POST /api/signin` (`Start-ToolSignIn`):
 
    | Tool | What starts |
    |---|---|
    | GitHub CLI | New console: `gh auth login --hostname github.com --web --git-protocol https --clipboard`. Answer **n** to "Authenticate Git with your GitHub credentials?" so git keeps using GCM |
    | Git | `git credential-manager github login --username <login> --browser` |
    | GitHub Desktop | Desktop (`$desktopExe`) if not running; user clicks "Sign in to GitHub.com" |
-   | VS Code | VS Code (`$vscodeExe`) if not running; user uses Accounts > "Sign in with GitHub" |
+   | VS Code | `Code.exe --reuse-window` (`$vscodeExe`): starts VS Code, or hands a running one the request in its last window (no new window; Windows may not bring it to the front). User clicks the Accounts icon at the bottom of the left bar, signs in with GitHub, approves in the browser |
 
    The list re-checks every 4 s (`GET /api/login-state`, `Get-LoginState`).
 4. **Save profile** - confirm, then `POST /api/save`: `Set-AccountProfile` writes `accounts.json`,
    then `Invoke-WithAppsClosed { Save-ProfileState <profile> }` (`readme/flows/save.md`). The new
    profile becomes active everywhere, gh and git included. On success the drawer closes.
+
+**Progress survives a refresh.** The wizard keeps its step, the four fields and which login was
+prepared in `localStorage` (`switcher-add-account`, `web/src/draft.ts`) - only what was typed, no
+tokens. After a reload or a closed tab the drawer reopens at the same step with "Picked up where
+you left off." The draft is deleted when the profile is saved or on **Cancel** (step 1); the close
+button (X) keeps it. If the browser blocks storage, the wizard still works without this.
 
 ## Status checks
 
@@ -71,7 +87,7 @@ The add-account list uses `Get-LoginState` (local checks only, see `readme/metho
 ## Failure behavior
 
 - An action that throws comes back as `ok: false`; the Activity entry shows **Failed** and the
-  error in red. Nothing else on the page changes.
+  error in red, and failed entries stay expanded. Nothing else on the page changes.
 - Apps that do not close within 20 s: `... did not close (unsaved changes?)` - nothing changed.
 - While an action runs, a modal covers the page ("If an app asks about unsaved changes, answer it
   there"). The server handles one request at a time, so actions never overlap.
@@ -86,4 +102,7 @@ The add-account list uses `Get-LoginState` (local checks only, see `readme/metho
 - Testing without clicking real actions: `.claude/RULES.md` section 10, step 4.
 
 ---
-*Last updated: 2026-11-14 (replaces the WinForms -Login window)*
+*Last updated: 2026-11-15 (wizard progress kept in localStorage across refresh; Skip copy for already-signed-in)*
+*Previously: 2026-11-15 (Open Desktop / Open VS Code labels; VS Code opened with --reuse-window)*
+*Previously: 2026-11-15 (server reopens outside VS Code's terminal; failed Activity entries stay expanded)*
+*Previously: 2026-11-14 (replaces the WinForms -Login window)*
