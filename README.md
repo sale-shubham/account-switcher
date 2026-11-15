@@ -1,8 +1,9 @@
 # GitHub Account Switcher for Windows
 
-Switch your GitHub account in **all four places at once**: the GitHub CLI (`gh`), git (commit
-identity + Git Credential Manager), **GitHub Desktop** and **VS Code**. It has a local web UI and
-a one-line CLI.
+Use **multiple GitHub accounts on one Windows PC**, such as a work and a personal account, and
+switch between them in **all four places at once**: the GitHub CLI (`gh`), git (commit identity +
+Git Credential Manager), **GitHub Desktop** and **VS Code**. No signing out and back in. It has a
+local web UI and a one-line CLI.
 
 ![Account Switcher: the active account wired to GitHub CLI, Git, GitHub Desktop and VS Code, with the saved profiles below](docs/screenshot.png)
 
@@ -104,6 +105,28 @@ Adding an account without the UI: `-Save` the current one, `-Clear`, sign in to 
 
 > **Never click "Sign out"** in Desktop or VS Code, and never run `gh auth logout`. It deletes
 > the token. Use **Prepare** in the UI, or `-Clear`, instead.
+
+## FAQ
+
+**How do I use two GitHub accounts on one Windows PC?**
+Add each account once with **Add account** in the UI (or `-Save` on the command line). After that,
+one **Switch** moves the GitHub CLI, git, GitHub Desktop and VS Code to the other account.
+
+**Does `gh auth switch` also change the account git pushes with?**
+Not with Git Credential Manager, the Git for Windows default. `gh auth switch` changes only the
+GitHub CLI; git keeps pushing with the account saved in Git Credential Manager, and commits keep
+the old `user.name` / `user.email`. The switcher changes all three.
+
+**How do I switch GitHub accounts in GitHub Desktop or VS Code without signing out?**
+Signing out deletes the saved token, so you sign in from scratch every time. The switcher closes
+the app normally, swaps in the sign-in it saved for that account, and reopens it.
+
+**Is it safe? Where are my tokens?**
+Tokens stay in Windows Credential Manager, encrypted for your Windows user. The UI runs on
+localhost only, with a per-run key, and never shows a token.
+
+**Does it work on macOS or Linux?**
+No. It is built on Windows Credential Manager and the Windows app data folders.
 
 ## Not covered
 
