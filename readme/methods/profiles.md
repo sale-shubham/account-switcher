@@ -1,7 +1,7 @@
 # Profiles and data directory
 
 Covers `accounts.json`, the `%LOCALAPPDATA%\github-switch` layout, `Get-Account`,
-`Set-AccountProfile`, `Get-ActiveProfile`, `Get-DesktopSnapshot`, `Get-VSCodeSnapshot`,
+`Set-AccountProfile`, `Remove-AccountProfile`, `Get-ActiveProfile`, `Get-DesktopSnapshot`, `Get-VSCodeSnapshot`,
 `Get-LoginState`, `Get-SwitcherStatus` and `Show-Status` in `switch-github-core.ps1`.
 
 ## `accounts.json` schema
@@ -51,6 +51,21 @@ PowerShell 5.1). `throw` if the profile name has anything but letters, digits an
 does not match `$loginPattern` (`^[A-Za-z0-9-]{1,39}$`, GitHub's rule — logins go on native
 command lines), or if the git name or email is empty.
 
+**One profile per GitHub account.** It also `throw`s if another profile (any name but the one
+being saved) already has the same `user` or the same `email`, compared case-insensitively. GitHub
+logins are unique, and GitHub allows an email on only one account at a time and attributes
+commits by email - so a second profile with either would be the same account, or would credit
+commits to the wrong one. Git itself does not care: `user.name` / `user.email` are free text, and
+the git name may repeat across profiles. The web UI shows the same two errors on step 1.
+
+### `Remove-AccountProfile $profileName`
+Forgets a profile, in this order so a failure never leaves a profile without its backups:
+removes it from `accounts.json` (and `$accounts` / `$names`), deletes `<dataDir>\<profile>`
+(Desktop + VS Code snapshots), then deletes its Credential Manager backups
+`github-switch:<profile>:*`. `throw`s for an unknown profile, a name that is not
+`^[A-Za-z0-9-]+$` (it becomes a folder path), or the active profile ("Switch to another profile
+first"). The tools' live sign-ins and the GitHub account are not touched, and no app closes.
+
 ### `Set-GitIdentity $account`
 Sets global `user.name`, `user.email` and `credential.https://github.com.username` from a profile.
 Used by `Switch-Profile` and `Save-ProfileState`. The GCM username is what makes pushes (also
@@ -96,7 +111,8 @@ it has. Run with no arguments to see it.
   (letters, digits, `-`).
 
 ---
-*Last updated: 2026-11-14 (Get-SwitcherStatus for the web UI; $loginPattern + field checks in Set-AccountProfile)*
+*Last updated: 2026-11-15 (one profile per GitHub login and email; Remove-AccountProfile)*
+*Previously: 2026-11-14 (Get-SwitcherStatus for the web UI; $loginPattern + field checks in Set-AccountProfile)*
 *Previously: 2026-11-14 (Set-GitIdentity)*
 *Previously: 2026-10-30 (Set-AccountProfile, Get-ActiveProfile, Get-LoginState for the login window)*
 *Previously: 2026-10-30 (initial methods doc)*

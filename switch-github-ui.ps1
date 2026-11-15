@@ -153,6 +153,10 @@ function Invoke-UiApi($context) {
                 Invoke-WithAppsClosed { Save-ProfileState $profileName }
             })
         }
+        'POST /api/delete' {
+            $body = Read-UiBody $request
+            Send-UiJson $context (Invoke-UiAction { Remove-AccountProfile "$($body.profile)" })
+        }
         'POST /api/switch' {
             $body = Read-UiBody $request
             Send-UiJson $context (Invoke-UiAction { Switch-Profile "$($body.profile)" })

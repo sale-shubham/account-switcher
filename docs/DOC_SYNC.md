@@ -18,7 +18,7 @@ Same doc-sync policy as the author's other repositories, with this project's fil
 | `CredStore`, `Backup-Tokens`, `Restore-Tokens`, `$tokenTarget` | `readme/methods/credential-store.md` |
 | `vscode_secret.py`, `$vscodeDbs`, `$vscodeExe`, `*-VSCodeSession` | `readme/methods/vscode-session.md` |
 | `$desktopStorage`, `$desktopExe`, `Get-DesktopLogin`, `Stop-App`, `Start-Apps`, `Invoke-WithAppsClosed`, `Copy-Folder` | `readme/methods/desktop-state.md` |
-| `accounts.json`, `$dataDir` layout, `$loginPattern`, `Get-Account`, `Set-AccountProfile`, `Get-ActiveProfile`, `Get-LoginState`, `Get-SwitcherStatus`, `Show-Status` | `readme/methods/profiles.md` |
+| `accounts.json`, `$dataDir` layout, `$loginPattern`, `Get-Account`, `Set-AccountProfile`, `Remove-AccountProfile`, `Get-ActiveProfile`, `Get-LoginState`, `Get-SwitcherStatus`, `Show-Status` | `readme/methods/profiles.md` |
 | Storage locations, lifecycle, limitations | `readme/ARCHITECTURE.md` |
 
 ## Additions trigger
@@ -68,6 +68,7 @@ Same doc-sync policy as the author's other repositories, with this project's fil
 - **Every doc carries a `*Last updated:*` footer** with a one-line reason, newest first.
 
 ---
-*Last updated: 2026-11-14 (web UI + API replace the login window)*
+*Last updated: 2026-11-15 (Remove-AccountProfile row)*
+*Previously: 2026-11-14 (web UI + API replace the login window)*
 *Previously: 2026-10-30 (core split + login window rows)*
 *Previously: 2026-10-30 (initial doc structure)*

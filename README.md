@@ -4,6 +4,8 @@ Switch your GitHub account in **all four places at once**: the GitHub CLI (`gh`)
 identity + Git Credential Manager), **GitHub Desktop** and **VS Code**. It has a local web UI and
 a one-line CLI.
 
+![Account Switcher: the active account wired to GitHub CLI, Git, GitHub Desktop and VS Code, with the saved profiles below](docs/screenshot.png)
+
 Each of these tools keeps its own GitHub sign-in, and none of them follows the others. Moving
 from a work account to a personal one usually means signing out and back in four times. Signing
 out also deletes the saved token. This tool signs every account in once, keeps each account's
@@ -15,6 +17,8 @@ sign-ins safe, and puts them back when you switch. No existing tool covered all 
 - **One view of every tool**: the active account and which account each tool really uses, with
   mismatches flagged.
 - **One-click switch** between profiles, with a confirmation and a full log of what changed.
+- **One profile per GitHub account**: a username or email already in use is refused, and a
+  profile can be deleted without touching the account or the apps.
 - **Guided add-account flow**: prepare the apps, sign in to each tool with live status, save.
 - **Nothing is ever signed out**. Tokens are backed up and restored inside Windows Credential
   Manager, and app sign-ins are moved aside, never deleted.

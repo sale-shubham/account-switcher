@@ -52,7 +52,7 @@ All READMEs live in the `readme/` directory at the project root.
 | `readme/methods/credential-store.md` | `CredStore` (C# P/Invoke), `Backup-Tokens` / `Restore-Tokens`, token target names |
 | `readme/methods/vscode-session.md` | `vscode_secret.py`, VS Code DB locations, secret key, how to re-find it after a VS Code update |
 | `readme/methods/desktop-state.md` | Desktop `Local Storage`, `Get-DesktopLogin`, `Stop-App` / `Start-Apps` / `Invoke-WithAppsClosed`, `Copy-Folder` |
-| `readme/methods/profiles.md` | `accounts.json` schema, data-dir layout, `Get-Account`, `Set-AccountProfile`, `Get-ActiveProfile`, `Get-LoginState`, `Get-SwitcherStatus`, `Show-Status` |
+| `readme/methods/profiles.md` | `accounts.json` schema, data-dir layout, `Get-Account`, `Set-AccountProfile` (one profile per GitHub login/email), `Remove-AccountProfile`, `Get-ActiveProfile`, `Get-LoginState`, `Get-SwitcherStatus`, `Show-Status` |
 | `readme/methods/ui-server.md` | `switch-github-ui.ps1` (HttpListener, per-run token, API routes, `Invoke-UiAction`) and the React client file map |
 
 ---

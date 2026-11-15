@@ -6,6 +6,7 @@ interface Props {
   profiles: Profile[];
   activeProfile: string;
   onSwitch: (profile: Profile) => void;
+  onDelete: (profile: Profile) => void;
   onAdd: () => void;
 }
 
@@ -19,7 +20,7 @@ function Saved({ ok, label }: { ok: boolean; label: string }) {
   );
 }
 
-export function Profiles({ profiles, activeProfile, onSwitch, onAdd }: Props) {
+export function Profiles({ profiles, activeProfile, onSwitch, onDelete, onAdd }: Props) {
   return (
     <section className="panel" aria-labelledby="profiles-title">
       <div className="panel-head">
@@ -54,9 +55,19 @@ export function Profiles({ profiles, activeProfile, onSwitch, onAdd }: Props) {
                   {active ? (
                     <span className="pill pill-active">Active</span>
                   ) : (
-                    <button type="button" className="btn btn-secondary" onClick={() => onSwitch(profile)}>
-                      Switch
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-danger-ghost btn-small"
+                        onClick={() => onDelete(profile)}
+                        aria-label={`Delete profile ${profile.name}`}
+                      >
+                        Delete
+                      </button>
+                      <button type="button" className="btn btn-secondary" onClick={() => onSwitch(profile)}>
+                        Switch
+                      </button>
+                    </>
                   )}
                 </div>
               </li>

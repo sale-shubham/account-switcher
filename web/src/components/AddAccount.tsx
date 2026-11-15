@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import type { ActionResult, LoginState, Status, ToolKey } from '../api';
+import type { ActionResult, LoginState, Profile, Status, ToolKey } from '../api';
 import { api, loginPattern, profilePattern } from '../api';
 import { CheckIcon, CloseIcon, toolIcons } from '../icons';
 import { clearDraft, emptyFields, loadDraft, saveDraft, type Fields } from '../draft';
@@ -32,12 +32,19 @@ const signInLabel: Record<ToolKey, string> = {
   vscode: 'Open VS Code',
 };
 
-function validate(fields: Fields): Partial<Record<keyof Fields, string>> {
+// Same rules as Set-AccountProfile: one profile per GitHub login and per email (both case-insensitive),
+// because GitHub logins are unique and an email belongs to one GitHub account at a time.
+function validate(fields: Fields, profiles: Profile[]): Partial<Record<keyof Fields, string>> {
   const errors: Partial<Record<keyof Fields, string>> = {};
+  const others = profiles.filter((p) => p.name.toLowerCase() !== fields.profile.toLowerCase());
+  const sameUser = others.find((p) => p.user.toLowerCase() === fields.user.trim().toLowerCase());
+  const sameEmail = others.find((p) => p.email.toLowerCase() === fields.email.trim().toLowerCase());
   if (!profilePattern.test(fields.profile)) errors.profile = 'Use letters, digits and "-" only, for example personal.';
   if (!loginPattern.test(fields.user)) errors.user = 'Enter the exact GitHub username, as shown on the profile page.';
+  else if (sameUser) errors.user = `@${sameUser.user} already has a profile: ${sameUser.name}. Use it, or delete it first.`;
   if (!fields.gitName.trim()) errors.gitName = 'Enter the name your commits should show.';
   if (!/^[^\s@]+@[^\s@]+$/.test(fields.email)) errors.email = 'Enter the email your commits should show.';
+  else if (sameEmail) errors.email = `This email is already in profile ${sameEmail.name}. GitHub links an email to one account only.`;
   return errors;
 }
 
@@ -52,7 +59,7 @@ export function AddAccount({ status, run, confirm, onClose }: Props) {
   const [logins, setLogins] = useState<LoginState | null>(null);
   const saved = useRef(false);
 
-  const errors = validate(fields);
+  const errors = validate(fields, status.profiles);
   const detailsValid = Object.keys(errors).length === 0;
   const replacing = status.profiles.some((p) => p.name === fields.profile);
   const activeProfile = status.profiles.find((p) => p.name === status.activeProfile);

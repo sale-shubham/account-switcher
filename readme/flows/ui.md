@@ -32,7 +32,7 @@ server running there would die mid-action and never reopen the apps.
 | Area | Shows / does | Data |
 |---|---|---|
 | Identity panel | Active profile, its GitHub login, the git name/email commits use, and a line to each tool: green = uses this account, amber dashed = another account (or GCM has no saved login), grey dashed = signed out | `GET /api/status` |
-| Profiles | Every profile with its login, git identity and which sign-ins are saved (Desktop, VS Code). **Switch** asks to confirm, then runs `Switch-Profile` | `GET /api/status`, `POST /api/switch` |
+| Profiles | Every profile with its login, git identity and which sign-ins are saved (Desktop, VS Code). **Switch** asks to confirm, then runs `Switch-Profile`. **Delete** (not on the active profile) asks to confirm, then runs `Remove-AccountProfile`: the switcher forgets the profile's snapshots and token backups; no app closes and no live sign-in changes | `GET /api/status`, `POST /api/switch`, `POST /api/delete` |
 | Add account | Drawer with four steps (below) | see steps |
 | Activity | Each action's result and every line it printed (warnings amber, errors red), newest first, last 30 | action responses |
 
@@ -43,7 +43,9 @@ profile replays the line animation once.
 
 1. **Account details** - profile name (letters, digits, `-`), GitHub username (exact, GitHub's
    rule), name and email for commits. Checked in the browser before **Next**; checked again by
-   `Set-AccountProfile` on save.
+   `Set-AccountProfile` on save. A GitHub username or email that another profile already has is
+   refused (one profile per GitHub account, see `readme/methods/profiles.md`); reusing a profile's
+   own name replaces it.
 2. **Prepare the apps** - confirm, then `POST /api/prepare`:
    `Invoke-WithAppsClosed { Save-ProfileState <active>; Clear-AppState }`. The current sign-in is
    saved into the active profile (if one is known), then Desktop and VS Code start signed out
@@ -102,7 +104,8 @@ The add-account list uses `Get-LoginState` (local checks only, see `readme/metho
 - Testing without clicking real actions: `.claude/RULES.md` section 10, step 4.
 
 ---
-*Last updated: 2026-11-15 (wizard progress kept in localStorage across refresh; Skip copy for already-signed-in)*
+*Last updated: 2026-11-15 (duplicate login/email refused; Delete profile button)*
+*Previously: 2026-11-15 (wizard progress kept in localStorage across refresh; Skip copy for already-signed-in)*
 *Previously: 2026-11-15 (Open Desktop / Open VS Code labels; VS Code opened with --reuse-window)*
 *Previously: 2026-11-15 (server reopens outside VS Code's terminal; failed Activity entries stay expanded)*
 *Previously: 2026-11-14 (replaces the WinForms -Login window)*

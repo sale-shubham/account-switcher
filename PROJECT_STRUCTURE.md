@@ -55,7 +55,8 @@ multiple-github-account/
 │       ├── profiles.md                  # accounts.json, data dir, status functions
 │       └── ui-server.md                 # API server, token, routes, React client map
 ├── docs/
-│   └── DOC_SYNC.md                      # MANDATORY doc-sync matrix
+│   ├── DOC_SYNC.md                      # MANDATORY doc-sync matrix
+│   └── screenshot.png                   # README screenshot (work profile blurred)
 ├── .gitignore
 └── .claudeignore
 ```
@@ -72,7 +73,7 @@ Credential Manager: github-switch:<profile>:<original target>   # token backups
 | File | Owns |
 |---|---|
 | `switch-github.ps1` | Parameters (`<profile>`, `-Save`, `-Clear`, `-Ui`); dot-sources the core (and the UI server for `-Ui`) and dispatches. No logic of its own |
-| `switch-github-core.ps1` | `CredStore` / `StoredCredential` (C#); script-scope state (`$accounts`, `$names`, paths, `$tokenTarget`, `$loginPattern`); `Get-Account`, `Set-AccountProfile`, `Set-GitIdentity`, `Get-ActiveProfile`, `Get-DesktopSnapshot`, `Get-VSCodeSnapshot`, `Backup-Tokens`, `Restore-Tokens`, `Get-DesktopLogin`, `Save-VSCodeSession`, `Set-VSCodeSession`, `Clear-VSCodeSession`, `Test-VSCodeSession`, `Stop-App`, `Start-Apps`, `Invoke-WithAppsClosed`, `Copy-Folder`, `Get-LoginState`, `Get-SwitcherStatus`, `Show-Status`; operations `Clear-AppState`, `Save-ProfileState`, `Switch-Profile` |
+| `switch-github-core.ps1` | `CredStore` / `StoredCredential` (C#); script-scope state (`$accounts`, `$names`, paths, `$tokenTarget`, `$loginPattern`); `Get-Account`, `Set-AccountProfile`, `Remove-AccountProfile`, `Set-GitIdentity`, `Get-ActiveProfile`, `Get-DesktopSnapshot`, `Get-VSCodeSnapshot`, `Backup-Tokens`, `Restore-Tokens`, `Get-DesktopLogin`, `Save-VSCodeSession`, `Set-VSCodeSession`, `Clear-VSCodeSession`, `Test-VSCodeSession`, `Stop-App`, `Start-Apps`, `Invoke-WithAppsClosed`, `Copy-Folder`, `Get-LoginState`, `Get-SwitcherStatus`, `Show-Status`; operations `Clear-AppState`, `Save-ProfileState`, `Switch-Profile` |
 | `switch-github-ui.ps1` | `$uiPort`, `$uiRoot`, `$uiTypes`, `$uiWindowTitle`, `$uiStopEventName`, `$uiTakeoverSeconds`; `Start-UiServer`, `Open-UiListener`, `Invoke-UiRequest`, `Invoke-UiApi`, `Invoke-UiAction`, `Start-ToolSignIn`, `New-UiToken`, `Send-UiFile`, `Send-UiJson`, `Send-UiResponse`, `Read-UiBody` |
 | `vscode_secret.py` | `KEY` (the VS Code secret key), actions `get` / `set` / `clear` / `has`, exit code `3` = no session |
 | `web/src/` | React client — file map in `readme/methods/ui-server.md` |
@@ -108,6 +109,7 @@ Credential Manager: github-switch:<profile>:<original target>   # token backups
 - No committed `web/dist` — build it once with `npm run build`
 
 ---
-*Last updated: 2026-11-14 (React web UI + switch-github-ui.ps1 replace the WinForms window)*
+*Last updated: 2026-11-15 (Remove-AccountProfile; docs/screenshot.png for the README)*
+*Previously: 2026-11-14 (React web UI + switch-github-ui.ps1 replace the WinForms window)*
 *Previously: 2026-10-30 (core split out of switch-github.ps1; -Login window added)*
 *Previously: 2026-10-30 (initial Claude setup)*

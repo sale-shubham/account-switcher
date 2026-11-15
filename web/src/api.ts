@@ -106,6 +106,7 @@ export const api = {
   signIn: (tool: ToolKey, user: string) => post('/api/signin', { tool, user }),
   save: (profile: NewProfile) => post('/api/save', profile),
   switchTo: (profile: string) => post('/api/switch', { profile }),
+  remove: (profile: string) => post('/api/delete', { profile }),
 };
 
 export const loginPattern = /^[A-Za-z0-9-]{1,39}$/;

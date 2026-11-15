@@ -105,6 +105,14 @@ export function App() {
     });
   };
 
+  const deleteProfile = (profile: Profile) =>
+    setConfirmRequest({
+      title: `Delete profile ${profile.name}?`,
+      body: `The switcher forgets ${profile.name}: its saved Desktop and VS Code sign-ins and its token backups. The GitHub account @${profile.user} and whatever the apps are signed in to right now are not touched. Nothing closes.`,
+      confirmLabel: 'Delete profile',
+      onConfirm: () => void run(`Delete profile ${profile.name}`, null, () => api.remove(profile.name)),
+    });
+
   if (!hasToken) {
     return (
       <Gate title="Open the switcher from PowerShell">
@@ -159,6 +167,7 @@ export function App() {
           profiles={status.profiles}
           activeProfile={status.activeProfile}
           onSwitch={switchTo}
+          onDelete={deleteProfile}
           onAdd={() => setAdding(true)}
         />
         <Activity entries={entries} />

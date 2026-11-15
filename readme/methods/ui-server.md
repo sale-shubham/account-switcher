@@ -58,6 +58,7 @@ All JSON. Actions return `{ ok, log: [{ level: info|warn|error, text }] }`.
 | `POST /api/signin` | `{ tool: gh\|git\|desktop\|vscode, user }` | `Start-ToolSignIn` |
 | `POST /api/save` | `{ profile, user, gitName, email }` | `Set-AccountProfile`, then `Invoke-WithAppsClosed { Save-ProfileState }` |
 | `POST /api/switch` | `{ profile }` | `Switch-Profile` |
+| `POST /api/delete` | `{ profile }` | `Remove-AccountProfile` (no app closes) |
 
 Unknown route: `404`. An exception outside an action: `500 { error }` and a warning in the console.
 
@@ -105,7 +106,8 @@ React 18 + TypeScript, built with Vite into `web\dist`. No UI library; styles in
   `localhost:47821` - the only host the listener accepts.
 
 ---
-*Last updated: 2026-11-15 (a new -Ui takes over from a running server between requests: Open-UiListener + stop event)*
+*Last updated: 2026-11-15 (POST /api/delete -> Remove-AccountProfile)*
+*Previously: 2026-11-15 (a new -Ui takes over from a running server between requests: Open-UiListener + stop event)*
 *Previously: 2026-11-15 (server window title; port-in-use message says where the old server is)*
 *Previously: 2026-11-15 (src/draft.ts: wizard progress survives a refresh)*
 *Previously: 2026-11-15 (Start-ToolSignIn: VS Code --reuse-window; Open Desktop / Open VS Code labels)*

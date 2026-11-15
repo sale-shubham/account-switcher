@@ -141,6 +141,13 @@ function Set-AccountProfile($profileName, $gitName, $email, $user) {
     }
     if ($user -notmatch $loginPattern) { throw "GitHub login '$user' is not valid (letters, digits and '-', up to 39)." }
     if (-not ($gitName -and $email)) { throw 'Git name and email are required.' }
+    # One profile per GitHub account: GitHub logins are unique, and an email belongs to one account at
+    # a time (GitHub attributes commits by email). -eq is case-insensitive, like GitHub's comparison.
+    foreach ($other in $script:names) {
+        if ($other -eq $profileName) { continue }
+        if ($script:accounts.$other.user -eq $user) { throw "GitHub login '$user' is already in profile '$other'. Use that profile, or delete it first." }
+        if ($script:accounts.$other.email -eq $email) { throw "Email '$email' is already in profile '$other'. GitHub links an email to one account only." }
+    }
     $entry = [pscustomobject]@{ name = $gitName; email = $email; user = $user }
     if ($script:accounts.PSObject.Properties[$profileName]) {
         $script:accounts.$profileName = $entry
@@ -151,6 +158,23 @@ function Set-AccountProfile($profileName, $gitName, $email, $user) {
     [IO.File]::WriteAllText($accountsFile, ($script:accounts | ConvertTo-Json))
     $script:names = @($script:accounts.PSObject.Properties.Name)
     Write-Host "Saved profile '$profileName' to accounts.json."
+}
+
+# Forgets a profile: its accounts.json entry, its app snapshots and its token backups. Live sign-ins
+# (the tools' own Credential Manager entries) are not touched, so no account is signed out.
+function Remove-AccountProfile($profileName) {
+    $null = Get-Account $profileName
+    # The name becomes a folder path below; never let it reach _previous, _cleared or a parent.
+    if ($profileName -notmatch '^[A-Za-z0-9-]+$') { throw "Profile name '$profileName' is not valid." }
+    if ((Get-ActiveProfile) -eq $profileName) { throw "'$profileName' is the active profile. Switch to another profile first." }
+    # Profile entry first: if a later step fails, only unreferenced leftovers remain, never a profile without its backups.
+    $script:accounts.PSObject.Properties.Remove($profileName)
+    [IO.File]::WriteAllText($accountsFile, ($script:accounts | ConvertTo-Json))
+    $script:names = @($script:accounts.PSObject.Properties.Name)
+    $folder = Join-Path $dataDir $profileName
+    if (Test-Path $folder) { Remove-Item $folder -Recurse -Force -ErrorAction Stop }
+    foreach ($backup in [CredStore]::List("github-switch:${profileName}:*")) { [CredStore]::Delete($backup.Target) }
+    Write-Host "Deleted profile '$profileName' (its saved sign-ins and token backups). The GitHub account itself is unchanged."
 }
 
 # Makes git commits and pushes use this account: identity + Git Credential Manager default account.
