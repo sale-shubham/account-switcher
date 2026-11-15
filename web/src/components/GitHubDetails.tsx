@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { GitHubProfile, GitHubStatus } from '../api';
 import { CheckIcon, githubToolIcons } from '../icons';
-import { githubToolNames, routesFor } from '../tools';
+import { githubToolNames, offAccountTools, routesFor } from '../tools';
 import { Avatar } from './Avatar';
 import { Drawer } from './Drawer';
 
@@ -9,6 +9,7 @@ interface Props {
   status: GitHubStatus;
   onSwitch: (profile: GitHubProfile) => void;
   onDelete: (profile: GitHubProfile) => void;
+  onRepair: (profile: GitHubProfile) => void;
   onClose: () => void;
 }
 
@@ -23,9 +24,10 @@ function Saved({ ok, label }: { ok: boolean; label: string }) {
 }
 
 // Everything about the GitHub side: which account each tool uses, and every profile.
-export function GitHubDetails({ status, onSwitch, onDelete, onClose }: Props) {
+export function GitHubDetails({ status, onSwitch, onDelete, onRepair, onClose }: Props) {
   const active = status.profiles.find((p) => p.name === status.activeProfile);
   const routes = routesFor(status, active?.user);
+  const offTools = active ? offAccountTools(status, routes) : '';
 
   return (
     <Drawer title="GitHub" onClose={onClose} wide>
@@ -61,6 +63,17 @@ export function GitHubDetails({ status, onSwitch, onDelete, onClose }: Props) {
             );
           })}
         </ul>
+        {active && offTools ? (
+          <div className="card-callout detail-callout">
+            <p>
+              {offTools} not use <span className="nowrap">@{active.user}</span>. Sign in to them again and save the
+              profile.
+            </p>
+            <button type="button" className="btn btn-primary btn-small" onClick={() => onRepair(active)}>
+              Sign in again
+            </button>
+          </div>
+        ) : null}
       </section>
 
       <section className="detail-section" aria-labelledby="gh-profiles">
@@ -86,22 +99,30 @@ export function GitHubDetails({ status, onSwitch, onDelete, onClose }: Props) {
                     </span>
                   </div>
                   <div className="row-actions">
+                    {isActive ? null : (
+                      <button
+                        type="button"
+                        className="btn btn-danger-ghost btn-small"
+                        onClick={() => onDelete(profile)}
+                        aria-label={`Delete GitHub profile ${profile.name}`}
+                      >
+                        Delete
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-small"
+                      onClick={() => onRepair(profile)}
+                      aria-label={`Sign in again to GitHub profile ${profile.name}`}
+                    >
+                      Sign in again
+                    </button>
                     {isActive ? (
                       <span className="pill pill-active">Active</span>
                     ) : (
-                      <>
-                        <button
-                          type="button"
-                          className="btn btn-danger-ghost btn-small"
-                          onClick={() => onDelete(profile)}
-                          aria-label={`Delete GitHub profile ${profile.name}`}
-                        >
-                          Delete
-                        </button>
-                        <button type="button" className="btn btn-secondary btn-small" onClick={() => onSwitch(profile)}>
-                          Switch
-                        </button>
-                      </>
+                      <button type="button" className="btn btn-secondary btn-small" onClick={() => onSwitch(profile)}>
+                        Switch
+                      </button>
                     )}
                   </div>
                 </li>

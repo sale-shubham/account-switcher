@@ -20,7 +20,7 @@ Same doc-sync policy as the author's other repositories, with this project's fil
 | `CredStore` (`lib/common.ps1`), `Backup-Tokens`, `Restore-Tokens`, `$tokenTarget`, any Credential Manager target name | `readme/methods/credential-store.md` |
 | `lib/vscode_secret.py`, `$vscodeDbs`, `$vscodeExe`, `*-VSCodeSession` | `readme/methods/vscode-session.md` |
 | `$desktopStorage`, `$desktopExe`, `Get-DesktopLogin`, `Stop-App`, `Start-Apps`, `Invoke-WithAppsClosed`, `Copy-Folder` | `readme/methods/desktop-state.md` |
-| `accounts.json`, `$dataDir` layout, `$loginPattern`, `Get-GitHubProfile`, `Set-GitHubProfile`, `Remove-GitHubProfile`, `Get-GitHubActiveProfile`, `Get-GitHubLoginState`, `Get-GitHubStatus`, `Show-GitHubStatus` | `readme/methods/profiles.md` |
+| `accounts.json`, `$dataDir` layout, `$loginPattern`, `Get-GitHubProfile`, `Set-GitHubProfile`, `Remove-GitHubProfile`, `Remove-GitHubCliLogin`, `Get-GitHubActiveProfile`, `Get-GitHubLoginState`, `Get-GitHubStatus`, `Show-GitHubStatus` | `readme/methods/profiles.md` |
 | Storage locations, lifecycle, limitations | `readme/ARCHITECTURE.md` |
 | `docs/index.html` (public GitHub Pages site) | `README.md` - the site repeats its facts |
 
@@ -73,7 +73,8 @@ Same doc-sync policy as the author's other repositories, with this project's fil
 - **Every doc carries a `*Last updated:*` footer** with a one-line reason, newest first.
 
 ---
-*Last updated: 2026-11-15 (public site docs/index.html rows for account-switcher)*
+*Last updated: 2026-11-15 (Remove-GitHubCliLogin in the profiles row)*
+*Previously: 2026-11-15 (public site docs/index.html rows for account-switcher)*
 *Previously: 2026-11-15 (account-switcher: Claude Code rows, lib/ paths, tool-family addition; site rows dropped)*
 *Previously: 2026-11-15 (public site docs/index.html rows)*
 *Previously: 2026-11-15 (Remove-GitHubProfile row)*

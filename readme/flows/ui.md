@@ -31,20 +31,39 @@ terminals, so a server running there would die mid-action and never reopen the a
 
 | Area | Shows / does | Data |
 |---|---|---|
-| GitHub card | Active profile, @login and the git name/email commits use; a chip per tool (green = uses this account, amber = another account or GCM has no saved login, grey dashed = signed out); badge "All 4 tools linked" / "N of 4"; **Switch to** list of the other profiles | `GET /api/status` (`github`) |
+| GitHub card | Active profile, @login and the git name/email commits use; a chip per tool (green = uses this account, amber = another account or GCM has no saved login, grey dashed = signed out; logins compared ignoring case, so `Octocat` and `octocat` are the same account); badge "All 4 tools linked" / "N of 4"; when an installed tool is off the active account, a callout naming those tools with **Sign in again**; **Switch to** list of the other profiles | `GET /api/status` (`github`) |
 | Claude Code card | Signed-in email, organization and plan (e.g. "Max 5x"); badge Saved / Not saved yet / Signed out / Not installed; "Save as profile" when the sign-in has no profile; a warning while Claude Code runs; **Switch to** list, expired sign-ins flagged | `GET /api/status` (`claude`) |
 | Card footer | **Details** opens the family's drawer; **Add account** its wizard | - |
-| GitHub details | Each tool and its account (bracket from the active profile), every profile with saved Desktop / VS Code sign-ins, **Switch** and **Delete** (not on the active profile) | `POST /api/github/switch`, `/delete` |
+| GitHub details | Each tool and its account (bracket from the active profile), the same **Sign in again** callout, every profile with saved Desktop / VS Code sign-ins, **Sign in again** on every profile, **Switch** and **Delete** (not on the active profile) | `POST /api/github/switch`, `/delete` |
 | Claude Code details | Who is signed in, running sessions, every profile with plan and "Sign-in valid until", **Switch** and **Delete**, how a switch works | `POST /api/claude/switch`, `/delete` |
 | Activity | Each action's result and every line it printed (warnings amber, errors red), newest first, last 30; failed entries stay expanded | action responses |
 
-**Refresh** re-reads the status; after an action the page refreshes by itself. Every Switch and
-Delete asks to confirm first. Deleting a profile never signs anything out.
+**Refresh** re-reads everything the page shows: every tool's live sign-in, the active profile, the
+Claude Code account, and the profile list (the server re-reads `accounts.json` before every request,
+so profiles saved from the CLI appear). After an action the page refreshes by itself. Which tools
+are installed is found when the server starts: restart `-Ui` after installing one. Every Switch and
+Delete asks to confirm first.
+
+**Deleting a GitHub profile** forgets only what the switcher saved (its Desktop / VS Code snapshots
+and token backups). gh and Git Credential Manager each keep a list of logins, so they stay signed in
+to that account - which is why the add-account wizard shows them "Signed in" when the same account
+is added again, and that sign-in step can be skipped. The delete dialog has an opt-in checkbox,
+unticked every time: **Also sign @login out of GitHub CLI and Git on this PC**. Ticked, the delete
+also runs `Remove-GitHubCliLogin` (`gh auth logout` + `git credential-manager github logout` for that
+account only; the Activity entry is "delete profile X and sign out"). Desktop and VS Code are never
+signed out by a delete. Deleting a Claude Code profile has no such option.
 
 ## GitHub: add an account
 
-1. **Account details** - profile name (letters, digits, `-`), GitHub username (exact, GitHub's
-   rule), name and email for commits. Checked in the browser before **Next**; checked again by
+1. **Account details** - each field says what goes in it, with an example as placeholder:
+   - **Profile name** - your own label, only used in the switcher (`work`); not the GitHub name.
+   - **GitHub username** - the login in `github.com/<username>` (GitHub's rule), not the display
+     name or email; capitals do not matter, the profile is saved with GitHub's spelling.
+   - **Name on commits** - `git user.name`, the author shown on every commit.
+   - **Email on commits** - `git user.email`: an email added to that GitHub account or its private
+     noreply address (`<id>+<login>@users.noreply.github.com`); GitHub credits commits by it.
+
+   Checked in the browser before **Next**; checked again by
    `Set-GitHubProfile` on save. A GitHub username or email that another profile already has is
    refused (one profile per GitHub account, see `readme/methods/profiles.md`); reusing a profile's
    own name replaces it.
@@ -65,10 +84,36 @@ Delete asks to confirm first. Deleting a profile never signs anything out.
    | GitHub Desktop | Desktop (`$desktopExe`) if not running; user clicks "Sign in to GitHub.com" |
    | VS Code | `Code.exe --reuse-window` (`$vscodeExe`): starts VS Code, or hands a running one the request in its last window. User clicks the Accounts icon at the bottom of the left bar, signs in with GitHub, approves in the browser |
 
-   The list re-checks every 4 s (`GET /api/github/login-state`, `Get-GitHubLoginState`).
-4. **Save profile** - confirm, then `POST /api/github/save`: `Set-GitHubProfile` writes
+   The list re-checks every 4 s (`GET /api/github/login-state`, `Get-GitHubLoginState`) with the
+   same tests saving uses: GitHub Desktop counts only when the app itself shows the login (an old
+   token left in Credential Manager does not). Each row also says what the tool uses now:
+   - gh / Git signed in to this login but using another: "Uses @other now. Saving switches it to @login."
+   - Desktop signed in as another login: a warning to go back one step and prepare the apps.
+
+   When a row changes, the dashboard status reloads too, so the card behind the wizard agrees.
+4. **Save profile** - names the tools that are not ready ("... not signed in as @login, so saving
+   leaves it out"), then confirm and `POST /api/github/save`: `Set-GitHubProfile` writes
    `accounts.json`, then `Invoke-WithAppsClosed { Save-GitHubProfileState <profile> }`
    (`readme/flows/github-save.md`). The new profile becomes active everywhere, gh and git included.
+
+Step 2 says what the apps hold right now: GitHub Desktop signed in as another login, or a VS Code
+session (counted as another account unless it is the active profile's own, since VS Code hides the
+account). If neither, it says the step can be skipped and **Skip this step** becomes the main button.
+
+## GitHub: sign in again (fix a saved profile)
+
+A profile saved before every tool was signed in (no Desktop or VS Code sign-in saved, or gh / git
+on another account) is fixed with **Sign in again**: on each profile row in the GitHub details, and
+in the callout on the card and in the details when the active profile has tools off its account.
+
+It opens the same four-step wizard, titled "Sign in again: <profile>", with the profile's details
+filled in. The profile name is read-only; username, name and email can be corrected. Prepare, sign
+in and save work as above; saving under the same name updates the profile (`Set-GitHubProfile`
+replaces the entry, `Save-GitHubProfileState` re-saves the sign-ins) and the buttons say **Update
+profile**. No new API route: it is `POST /api/github/prepare`, `/signin` and `/save`.
+
+For a profile that is not active, Desktop and VS Code usually hold the active account: prepare the
+apps first, or the save would store that account's VS Code session in this profile.
 
 ## Claude Code: add an account
 
@@ -92,9 +137,11 @@ second name.
 ## Progress survives a refresh
 
 Each wizard keeps its step and what was typed in `localStorage` (`web/src/draft.ts`):
-`switcher-add-account` (GitHub: step, the four fields, which login was prepared) and
+`switcher-add-account` (GitHub: step, the four fields, which login was prepared, and which profile
+is being signed in again, `repair`, empty when adding) and
 `switcher-add-claude` (step, profile name, which account). No tokens. After a reload the wizard
-reopens at the same step with "Picked up where you left off." The draft is deleted when the profile
+reopens at the same step with "Picked up where you left off." A draft resumes only for the same
+job: **Add account** does not resume a Sign-in-again draft, and the other way round. The draft is deleted when the profile
 is saved or on **Cancel**; the close button (X) keeps it. If the browser blocks storage, the wizards
 still work without this.
 
@@ -123,6 +170,12 @@ Claude Code's status comes from its own files (`Get-ClaudeStatus`, no network).
 
 ## Notes
 
+- One scrollbar at a time. With no drawer open, only the page scrolls. While a drawer, confirm or busy
+  dialog is open, the page is locked (`html:has(dialog:modal) { overflow: hidden }`), and a drawer's
+  title and footer stay put while only its body (`.drawer-body`) scrolls. `.drawer-body` is
+  `position: relative` so screen-reader-only text inside it (`.visually-hidden`, absolutely
+  positioned) stays inside the scrolling box. Without that, the text is positioned against the
+  dialog itself, which then grows a second scrollbar.
 - GitHub avatars load from `https://github.com/<login>.png`; initials if that fails. Claude accounts
   always show initials.
 - Development: run `.\switcher.ps1 -Ui`, then `cd web; npm run dev` and open the
@@ -130,7 +183,12 @@ Claude Code's status comes from its own files (`Get-ClaudeStatus`, no network).
 - Testing without clicking real actions: `.claude/RULES.md` section 10, step 4.
 
 ---
-*Last updated: 2026-11-15 (dashboard: one card per tool family; Claude Code card, details and wizard)*
+*Last updated: 2026-11-15 (one scrollbar: page locked while a dialog is open, only the drawer body scrolls)*
+*Previously: 2026-11-15 (GitHub delete: opt-in "also sign out of GitHub CLI and Git")*
+*Previously: 2026-11-15 (logins compared ignoring case; Refresh also re-reads profiles; step 1 field hints + examples)*
+*Previously: 2026-11-15 (sign-in list uses the save tests: Desktop must show the login; row notes; save-step warning)*
+*Previously: 2026-11-15 (GitHub "Sign in again" for a saved profile; Prepare step says what the apps hold)*
+*Previously: 2026-11-15 (dashboard: one card per tool family; Claude Code card, details and wizard)*
 *Previously: 2026-11-15 (duplicate login/email refused; Delete profile button)*
 *Previously: 2026-11-15 (wizard progress kept in localStorage across refresh; Skip copy for already-signed-in)*
 *Previously: 2026-11-15 (Open Desktop / Open VS Code labels; VS Code opened with --reuse-window)*

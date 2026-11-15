@@ -61,6 +61,8 @@ export function App() {
   const [busy, setBusy] = useState<Busy | null>(null);
   const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null);
   const [adding, setAdding] = useState<ToolId | null>(draftTool);
+  // The GitHub profile the wizard signs in again, or null when it adds an account.
+  const [repairing, setRepairing] = useState<string | null>(() => loadGitHubDraft()?.repair || null);
   const [savingCurrent, setSavingCurrent] = useState(false);
   const [details, setDetails] = useState<ToolId | null>(null);
   const [entries, setEntries] = useState<ActivityEntry[]>([]);
@@ -120,9 +122,16 @@ export function App() {
   const deleteGitHub = (profile: GitHubProfile) =>
     setConfirmRequest({
       title: `Delete GitHub profile ${profile.name}?`,
-      body: `The switcher forgets ${profile.name}: its saved Desktop and VS Code sign-ins and its token backups. The GitHub account @${profile.user} and whatever the apps are signed in to right now are not touched. Nothing closes.`,
+      body: `The switcher forgets ${profile.name}: its saved Desktop and VS Code sign-ins and its token backups. The GitHub account @${profile.user} itself is not touched, and nothing closes.`,
       confirmLabel: 'Delete profile',
-      onConfirm: () => void run(`GitHub: delete profile ${profile.name}`, null, () => api.github.remove(profile.name)),
+      option: {
+        label: `Also sign @${profile.user} out of GitHub CLI and Git on this PC`,
+        hint: 'Off: gh and Git keep this login, so adding the account again skips signing in to them. On: they forget it here; the token stays valid on GitHub until you revoke it there.',
+      },
+      onConfirm: (signOut) =>
+        void run(`GitHub: delete profile ${profile.name}${signOut ? ' and sign out' : ''}`, null, () =>
+          api.github.remove(profile.name, signOut),
+        ),
     });
 
   const switchClaude = (profile: ClaudeProfile) =>
@@ -147,7 +156,14 @@ export function App() {
   const openAdd = (tool: ToolId, current = false) => {
     setDetails(null);
     setSavingCurrent(current);
+    setRepairing(null);
     setAdding(tool);
+  };
+
+  const repairGitHub = (profile: GitHubProfile) => {
+    setDetails(null);
+    setRepairing(profile.name);
+    setAdding('github');
   };
 
   if (!hasToken) {
@@ -203,6 +219,7 @@ export function App() {
           <GitHubCard
             status={status.github}
             onSwitch={switchGitHub}
+            onRepair={repairGitHub}
             onDetails={() => setDetails('github')}
             onAdd={() => openAdd('github')}
           />
@@ -223,13 +240,26 @@ export function App() {
       </footer>
 
       {details === 'github' ? (
-        <GitHubDetails status={status.github} onSwitch={switchGitHub} onDelete={deleteGitHub} onClose={() => setDetails(null)} />
+        <GitHubDetails
+          status={status.github}
+          onSwitch={switchGitHub}
+          onDelete={deleteGitHub}
+          onRepair={repairGitHub}
+          onClose={() => setDetails(null)}
+        />
       ) : null}
       {details === 'claude' ? (
         <ClaudeDetails status={status.claude} onSwitch={switchClaude} onDelete={deleteClaude} onClose={() => setDetails(null)} />
       ) : null}
       {adding === 'github' ? (
-        <GitHubAddAccount status={status.github} run={run} confirm={setConfirmRequest} onClose={() => setAdding(null)} />
+        <GitHubAddAccount
+          status={status.github}
+          run={run}
+          confirm={setConfirmRequest}
+          onClose={() => setAdding(null)}
+          onToolsChanged={refresh}
+          repair={repairing}
+        />
       ) : null}
       {adding === 'claude' ? (
         <ClaudeAddAccount

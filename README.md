@@ -25,8 +25,11 @@ Windows Credential Manager, and puts it back when you switch.
 - **One-click switch** between profiles, with a confirmation and a full log of what changed.
 - **Each tool switches on its own**: work GitHub with a personal Claude account is fine.
 - **One profile per account**: a GitHub username or email, or a Claude account, that already has a
-  profile is refused. A profile can be deleted without touching the account or the apps.
+  profile is refused. A profile can be deleted without touching the account or the apps, or, if you
+  tick the box, also signed out of the GitHub CLI and Git on this PC.
 - **Guided add-account wizards** with live sign-in status; progress survives a page refresh.
+  **Sign in again** reopens the GitHub wizard for a saved profile, to fix one saved before every
+  tool was signed in.
 - **Nothing is ever signed out**. Tokens are backed up and restored inside Windows Credential
   Manager; app sign-ins are moved aside, never deleted. Claude Code's sign-in is saved again before
   every switch, because its tokens change as it refreshes them.

@@ -59,10 +59,10 @@ All READMEs live in the `readme/` directory at the project root.
 | `readme/flows/claude-save.md` | `claude -Save <profile>` — one profile per Claude identity |
 | `readme/flows/claude-clear.md` | `claude -Clear` (sign out without `/logout`) + the add-a-Claude-account procedure |
 | `readme/flows/ui.md` | `-Ui` dashboard — tool cards, details drawers, both add-account wizards, activity log |
-| `readme/methods/credential-store.md` | `CredStore` (C# P/Invoke, `lib/common.ps1`), `Backup-Tokens` / `Restore-Tokens`, every target name |
+| `readme/methods/credential-store.md` | `CredStore` (C# P/Invoke, `lib/common.ps1`), `Backup-Tokens` / `Restore-Tokens`, `Get-GitHubLoginSpelling`, every target name |
 | `readme/methods/vscode-session.md` | `lib/vscode_secret.py`, VS Code DB locations, secret key, how to re-find it after a VS Code update |
 | `readme/methods/desktop-state.md` | Desktop `Local Storage`, `Get-DesktopLogin`, `Invoke-WithAppsClosed`; shared `Stop-App` / `Start-Apps` / `Copy-Folder` |
-| `readme/methods/profiles.md` | GitHub `accounts.json` schema, data-dir layout, `Get-GitHubProfile`, `Set-GitHubProfile` (one profile per GitHub login/email), `Remove-GitHubProfile`, `Get-GitHubActiveProfile`, `Get-GitHubLoginState`, `Get-GitHubStatus`, `Show-GitHubStatus` |
+| `readme/methods/profiles.md` | GitHub `accounts.json` schema, data-dir layout, `Read-GitHubProfiles`, `Get-GitHubProfile`, `Set-GitHubProfile` (one profile per GitHub login/email), `Remove-GitHubProfile` (+ opt-in `Remove-GitHubCliLogin`), `Get-GitHubActiveProfile`, `Get-GitHubLoginState`, `Get-GitHubStatus`, `Show-GitHubStatus` |
 | `readme/methods/claude-state.md` | `lib/claude.ps1` + `lib/claude_account.py`: Claude Code's files, profile storage, identity, every function, how to re-verify after a Claude Code update |
 | `readme/methods/ui-server.md` | `lib/ui-server.ps1` (HttpListener, per-run token, API routes per tool, `Invoke-UiAction`) and the React client file map |
 
@@ -111,7 +111,9 @@ The Stop hook `.claude/hooks/check-readme-sync.sh` blocks a turn that edited `*.
 2. **Never sign out to switch.** "Sign out" in Desktop / VS Code, `gh auth logout`,
    `git credential-manager github logout`, and Claude Code's `/logout` / `claude auth logout` end
    the saved sign-in. Use `-Clear` (GitHub: moves state aside; Claude Code: saves, then removes it
-   from Claude Code's files).
+   from Claude Code's files). The one exception is deleting a GitHub profile with the opt-in "Also
+   sign out of GitHub CLI and Git" box ticked (`Remove-GitHubProfile -SignOut` ->
+   `Remove-GitHubCliLogin`): the user asked for that account to be removed from this PC. Off by default.
 3. **gh switches first, before any GitHub change.** It is the step most likely to fail (account
    not logged in to gh); failing there must leave git config, tokens and app state untouched. Keep
    that ordering in `readme/flows/github-switch.md` in sync.

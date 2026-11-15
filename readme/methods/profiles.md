@@ -1,6 +1,6 @@
 # Profiles and data directory
 
-Covers `accounts.json`, the `%LOCALAPPDATA%\github-switch` layout, `Get-GitHubProfile`,
+Covers `accounts.json`, the `%LOCALAPPDATA%\github-switch` layout, `Read-GitHubProfiles`, `Get-GitHubProfile`,
 `Set-GitHubProfile`, `Remove-GitHubProfile`, `Get-GitHubActiveProfile`, `Get-DesktopSnapshot`, `Get-VSCodeSnapshot`,
 `Get-GitHubLoginState`, `Get-GitHubStatus` and `Show-GitHubStatus` in `lib/github.ps1`.
 
@@ -20,7 +20,7 @@ web UI create it. A missing file loads as zero profiles.
 |---|---|
 | `name` | `git config --global user.name` |
 | `email` | `git config --global user.email` |
-| `user` | `gh auth switch --user`, `credential.https://github.com.username`, token backup filter, Desktop login check |
+| `user` | `gh auth switch --user` (as `Get-GitHubLoginSpelling` spells it), `credential.https://github.com.username`, token backup filter, Desktop login check. GitHub logins ignore case; every comparison here and in the web UI does too |
 
 ## Data directory
 
@@ -46,6 +46,12 @@ working. Tool families added since keep their state in `%LOCALAPPDATA%\account-s
 
 ## API
 
+### `Read-GitHubProfiles`
+(Re)reads `accounts.json` into `$accounts` / `$names` (script scope). Runs once when
+`lib/github.ps1` loads; the web UI server runs it again before every API request (`Invoke-UiApi`), so
+a profile saved from the CLI while the server runs shows up on **Refresh**, and a save from the page
+never writes back a list that is missing it.
+
 ### `Get-GitHubProfile $profileName`
 Returns the profile object. `throw` if unknown (lists available names) or if `name`, `email` or
 `user` is empty.
@@ -55,7 +61,10 @@ Adds or replaces a profile in `$accounts` / `$names` (script scope) and rewrites
 as UTF-8 **without** BOM (`[IO.File]::WriteAllText`; `Set-Content -Encoding UTF8` would add one in
 PowerShell 5.1). `throw` if the profile name has anything but letters, digits and `-`, if `$user`
 does not match `$loginPattern` (`^[A-Za-z0-9-]{1,39}$`, GitHub's rule — logins go on native
-command lines), or if the git name or email is empty.
+command lines), or if the git name or email is empty. `$user` is stored as GitHub spells it
+(`Get-GitHubLoginSpelling`, from gh's or Desktop's Credential Manager entry; it prints "GitHub spells
+the login '...'; saved that way." when that differs from what was typed), so the profile shows the
+same text as gh and Desktop.
 
 **One profile per GitHub account.** It also `throw`s if another profile (any name but the one
 being saved) already has the same `user` or the same `email`, compared case-insensitively. GitHub
@@ -64,13 +73,27 @@ commits by email - so a second profile with either would be the same account, or
 commits to the wrong one. Git itself does not care: `user.name` / `user.email` are free text, and
 the git name may repeat across profiles. The web UI shows the same two errors on step 1.
 
-### `Remove-GitHubProfile $profileName`
+### `Remove-GitHubProfile $profileName [-SignOut]`
 Forgets a profile, in this order so a failure never leaves a profile without its backups:
 removes it from `accounts.json` (and `$accounts` / `$names`), deletes `<dataDir>\<profile>`
 (Desktop + VS Code snapshots), then deletes its Credential Manager backups
 `github-switch:<profile>:*`. `throw`s for an unknown profile, a name that is not
 `^[A-Za-z0-9-]+$` (it becomes a folder path), or the active profile ("Switch to another profile
-first"). The tools' live sign-ins and the GitHub account are not touched, and no app closes.
+first"). Without `-SignOut` the tools' live sign-ins and the GitHub account are not touched, and no
+app closes: gh and GCM keep the login, so adding the account again skips signing in to them. With
+`-SignOut` (the opt-in checkbox in the web UI's delete dialog) it then runs `Remove-GitHubCliLogin`.
+
+### `Remove-GitHubCliLogin $user`
+Signs one account out of the GitHub CLI and Git Credential Manager on this PC, with their own
+commands: `gh auth logout --hostname github.com --user <GitHub's spelling>` (only when
+`gh:github.com:<user>` exists; if it was gh's active account, gh picks another), then
+`git credential-manager github logout <login> --no-ui` with the login as `github list` spells it
+(matched ignoring case). Each tool without that login prints "has no login"; a failed logout is a
+warning, not a `throw` (the profile is already deleted). Warns if `credential.https://github.com.username`
+is still this account (the next push would ask to sign in). Both commands delete the local token
+only; it stays valid on GitHub until revoked there. Desktop and VS Code are not touched (they hold
+one sign-in each; `Clear-GitHubAppState` moves it aside). Only `Remove-GitHubProfile -SignOut`
+calls it - never a switch (`CLAUDE.md` hard rule 2).
 
 ### `Set-GitIdentity $account`
 Sets global `user.name`, `user.email` and `credential.https://github.com.username` from a profile.
@@ -85,10 +108,21 @@ both also call `Set-GitIdentity`, so it matches git's account.
 ### `Get-DesktopSnapshot $profileName` / `Get-VSCodeSnapshot $profileName`
 Paths of the two snapshot items for a profile.
 
-### `Get-GitHubLoginState $user` → ordered hashtable `gh`, `git`, `desktop`, `vscode` (booleans)
-Local checks only: Credential Manager `gh:github.com:<user>`, `git credential-manager github list`,
-Credential Manager `GitHub - https://api.github.com/<user>`, and `Test-VSCodeSession` (any account).
-Feeds the web UI's add-account sign-in list (`GET /api/github/login-state`).
+### `Get-GitHubLoginState $user` → ordered hashtable `gh`, `git`, `desktop`, `vscode` (booleans) + `now`
+Is each tool ready for `$user`, by the same tests `Save-GitHubProfileState` uses:
+
+| Key | True when | Why |
+|---|---|---|
+| `gh` | Credential Manager has `gh:github.com:<user>` | gh holds several logins; saving runs `gh auth switch` to this one |
+| `git` | `git credential-manager github list` contains `<user>` | GCM holds several logins; saving sets `credential.https://github.com.username` |
+| `desktop` | `Get-DesktopLogin` equals `<user>` | Saving keeps Desktop only then. A `GitHub - https://api.github.com/<user>` token left in Credential Manager does **not** count: after a prepare it stays there while Desktop shows signed out |
+| `vscode` | `Test-VSCodeSession` (any account) | VS Code hides the account |
+
+`now` = `{ gh, git, desktop }`: the account each tool uses at this moment, or `$null`:
+`gh config get user -h github.com` (gh's active account, from its config file),
+`credential.https://github.com.username`, `Get-DesktopLogin`. All local, no network: the web UI's
+sign-in list polls it every 4 s (`GET /api/github/login-state`). `Get-GitHubStatus` asks gh over the
+network instead (`gh api user`); both name the same account unless gh's config and token disagree.
 
 ### `Get-GitHubStatus` → ordered hashtable
 Everything the CLI status and the web UI show, gathered once:
@@ -117,7 +151,10 @@ it has. Run with no arguments to see it.
   (letters, digits, `-`).
 
 ---
-*Last updated: 2026-11-15 (GitHub functions renamed *-GitHub*; accounts.json in the project root; account-switch folder for other tools)*
+*Last updated: 2026-11-15 (Remove-GitHubProfile -SignOut + Remove-GitHubCliLogin: opt-in sign-out of gh and GCM on delete)*
+*Previously: 2026-11-15 (Read-GitHubProfiles before every UI request; logins compared ignoring case, saved as GitHub spells them)*
+*Previously: 2026-11-15 (Get-GitHubLoginState: Desktop counts only when the app shows the login; `now` accounts)*
+*Previously: 2026-11-15 (GitHub functions renamed *-GitHub*; accounts.json in the project root; account-switch folder for other tools)*
 *Previously: 2026-11-15 (one profile per GitHub login and email; Remove-GitHubProfile)*
 *Previously: 2026-11-14 (Get-GitHubStatus for the web UI; $loginPattern + field checks in Set-GitHubProfile)*
 *Previously: 2026-11-14 (Set-GitIdentity)*

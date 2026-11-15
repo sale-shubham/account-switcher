@@ -56,18 +56,22 @@ tool family (`/api/<tool>/...`); a new family adds its own group.
 | Route | Body / query | Calls |
 |---|---|---|
 | `GET /api/status` | - | `{ github: Get-GitHubStatus, claude: Get-ClaudeStatus }` |
-| `GET /api/github/login-state` | `?user=<login>` (must match `$loginPattern`, else `400`) | `Get-GitHubLoginState` |
+| `GET /api/github/login-state` | `?user=<login>` (must match `$loginPattern`, else `400`) | `Get-GitHubLoginState`: `{ gh, git, desktop, vscode, now: { gh, git, desktop } }` |
 | `POST /api/github/prepare` | - | `Invoke-WithAppsClosed { Save-GitHubProfileState <active>; Clear-GitHubAppState }` |
 | `POST /api/github/signin` | `{ tool: gh\|git\|desktop\|vscode, user }` | `Start-ToolSignIn` (`claude` refused with `400`) |
 | `POST /api/github/save` | `{ profile, user, gitName, email }` | `Set-GitHubProfile`, then `Invoke-WithAppsClosed { Save-GitHubProfileState }` |
 | `POST /api/github/switch` | `{ profile }` | `Switch-GitHubProfile` |
-| `POST /api/github/delete` | `{ profile }` | `Remove-GitHubProfile` (no app closes) |
+| `POST /api/github/delete` | `{ profile, signOut }` (`signOut` must be JSON `true` to count; missing = `false`) | `Remove-GitHubProfile`, with `-SignOut` when ticked (`Remove-GitHubCliLogin`: gh + GCM logout for that account). No app closes |
 | `GET /api/claude/status` | - | `Get-ClaudeStatus` (local files only; the Claude wizard polls it) |
 | `POST /api/claude/prepare` | - | `Clear-ClaudeSignIn` |
 | `POST /api/claude/signin` | - | `Start-ToolSignIn 'claude'` -> `Start-ClaudeSignIn` |
 | `POST /api/claude/save` | `{ profile }` | `Save-ClaudeProfile` |
 | `POST /api/claude/switch` | `{ profile }` | `Switch-ClaudeProfile` |
 | `POST /api/claude/delete` | `{ profile }` | `Remove-ClaudeProfile` |
+
+Before every route `Invoke-UiApi` runs `Read-GitHubProfiles`, so profiles saved from the CLI while
+the server runs are seen, and a save never writes back an older list. Every other value a route
+returns is read live.
 
 Unknown route: `404`. An exception outside an action: `500 { error }` and a warning in the console.
 
@@ -98,14 +102,14 @@ React 18 + TypeScript, built with Vite into `web\dist`. No UI library; styles in
 | File | Owns |
 |---|---|
 | `src/api.ts` | Types for every response (`Status` = one key per tool family), token handling, `api.github.*` / `api.claude.*`, `loginPattern` / `profilePattern` (same rules as the PowerShell side) |
-| `src/tools.ts` | GitHub tool names and `routesFor` (how each tool relates to the active account); Claude `planLabel`, `expiryNote` |
+| `src/tools.ts` | GitHub tool names, `githubToolInstalled`, `listNames`, `sameLogin` (GitHub logins ignore case; every login comparison in the client uses it), `routesFor` (how each tool relates to the active account) and `offAccountTools` (which installed tools are off it, for the "Sign in again" callouts); Claude `planLabel`, `expiryNote` |
 | `src/run.ts` | `Run` / `Busy` types for the action runner, `appsHint` |
 | `src/App.tsx` | Dashboard, `run` (busy modal + Activity entry + refresh), Switch / Delete confirms, which drawer is open, gate screens |
 | `src/components/ToolCard.tsx`, `QuickSwitch.tsx`, `Drawer.tsx`, `Stepper.tsx` | Shared by every tool family: card frame with status badge, the "Switch to" list, side drawer on `<dialog>`, wizard stepper |
-| `src/components/GitHubCard.tsx`, `GitHubDetails.tsx`, `GitHubAddAccount.tsx` | GitHub card (active profile, tool chips), details drawer (tool routes, profiles with Delete), four-step add-account wizard with sign-in polling |
+| `src/components/GitHubCard.tsx`, `GitHubDetails.tsx`, `GitHubAddAccount.tsx` | GitHub card (active profile, tool chips), details drawer (tool routes, profiles with Delete and Sign in again), four-step add-account wizard with sign-in polling (row notes from `now`, a warning on the save step for tools that are not ready, and `onToolsChanged` reloads the dashboard status when a sign-in changes), which also signs a saved profile in again (`repair`) |
 | `src/components/ClaudeCard.tsx`, `ClaudeDetails.tsx`, `ClaudeAddAccount.tsx` | Claude Code card (account, plan, running sessions, "Save as profile"), details drawer, add-account wizard (save current, or sign out - sign in - save) |
-| `src/draft.ts` | Wizard progress per tool in `localStorage` (`switcher-add-account`, `switcher-add-claude`), so a refresh does not lose it |
-| `src/components/ConfirmDialog.tsx`, `Activity.tsx`, `Avatar.tsx` | Confirm modal, action log, avatar (GitHub picture or initials) |
+| `src/draft.ts` | Wizard progress per tool in `localStorage` (`switcher-add-account`, `switcher-add-claude`), so a refresh does not lose it; the GitHub draft records which profile it signs in again (`repair`) |
+| `src/components/ConfirmDialog.tsx`, `Activity.tsx`, `Avatar.tsx` | Confirm modal (optional `option` checkbox, unticked on every open, passed to `onConfirm`), action log, avatar (GitHub picture or initials) |
 
 `npm run check` (= `tsc --noEmit`) typechecks; `npm run build` typechecks and writes `web\dist`.
 
@@ -117,7 +121,11 @@ React 18 + TypeScript, built with Vite into `web\dist`. No UI library; styles in
   `localhost:47821` - the only host the listener accepts.
 
 ---
-*Last updated: 2026-11-15 (routes per tool family, /api/claude/*; dashboard client files)*
+*Last updated: 2026-11-15 (delete route takes signOut; ConfirmDialog option checkbox)*
+*Previously: 2026-11-15 (Read-GitHubProfiles before every request; tools.ts sameLogin)*
+*Previously: 2026-11-15 (login-state returns `now`; wizard row notes, save-step warning, status reload on sign-in change)*
+*Previously: 2026-11-15 (GitHub "Sign in again": offAccountTools, wizard repair mode, draft repair field)*
+*Previously: 2026-11-15 (routes per tool family, /api/claude/*; dashboard client files)*
 *Previously: 2026-11-15 (POST /api/delete -> Remove-AccountProfile)*
 *Previously: 2026-11-15 (a new -Ui takes over from a running server between requests: Open-UiListener + stop event)*
 *Previously: 2026-11-15 (server window title; port-in-use message says where the old server is)*

@@ -125,6 +125,8 @@ function Invoke-UiApi($context) {
     $request = $context.Request
     $route = "$($request.HttpMethod) $($request.Url.AbsolutePath)"
     if ($request.HttpMethod -eq 'POST') { Write-Host "$(Get-Date -Format 'HH:mm:ss') $route" }
+    # Profiles saved from the CLI since the last request; everything else every route reads live anyway.
+    Read-GitHubProfiles
     switch ($route) {
         'GET /api/status' {
             # One key per tool; the page renders one card per key.
@@ -161,7 +163,8 @@ function Invoke-UiApi($context) {
         }
         'POST /api/github/delete' {
             $body = Read-UiBody $request
-            Send-UiJson $context (Invoke-UiAction { Remove-GitHubProfile "$($body.profile)" })
+            # signOut: the delete dialog's opt-in "also sign out of GitHub CLI and Git"; missing = false.
+            Send-UiJson $context (Invoke-UiAction { Remove-GitHubProfile "$($body.profile)" -SignOut:($body.signOut -eq $true) })
         }
         'POST /api/github/switch' {
             $body = Read-UiBody $request
