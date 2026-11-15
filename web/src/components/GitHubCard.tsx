@@ -1,6 +1,6 @@
 import type { GitHubProfile, GitHubStatus } from '../api';
 import { BranchIcon, githubToolIcons } from '../icons';
-import { githubToolNames, routesFor } from '../tools';
+import { githubToolNames, offAccountTools, routesFor } from '../tools';
 import { Avatar } from './Avatar';
 import { QuickSwitch } from './QuickSwitch';
 import { ToolCard, type Tone } from './ToolCard';
@@ -8,13 +8,15 @@ import { ToolCard, type Tone } from './ToolCard';
 interface Props {
   status: GitHubStatus;
   onSwitch: (profile: GitHubProfile) => void;
+  onRepair: (profile: GitHubProfile) => void;
   onDetails: () => void;
   onAdd: () => void;
 }
 
-export function GitHubCard({ status, onSwitch, onDetails, onAdd }: Props) {
+export function GitHubCard({ status, onSwitch, onRepair, onDetails, onAdd }: Props) {
   const active = status.profiles.find((p) => p.name === status.activeProfile);
   const routes = routesFor(status, active?.user);
+  const offTools = active ? offAccountTools(status, routes) : '';
   const linked = routes.filter((r) => r.state === 'ok').length;
   const badge: { tone: Tone; text: string } = !active
     ? { tone: 'off', text: 'No active profile' }
@@ -60,6 +62,17 @@ export function GitHubCard({ status, onSwitch, onDetails, onAdd }: Props) {
           );
         })}
       </ul>
+
+      {active && offTools ? (
+        <div className="card-callout">
+          <p>
+            {offTools} not use <span className="nowrap">@{active.user}</span>.
+          </p>
+          <button type="button" className="btn btn-primary btn-small" onClick={() => onRepair(active)}>
+            Sign in again
+          </button>
+        </div>
+      ) : null}
 
       <QuickSwitch
         items={others.map((p) => ({

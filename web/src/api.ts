@@ -59,7 +59,11 @@ export interface Status {
   claude: ClaudeStatus;
 }
 
-export type GitHubLoginState = Record<GitHubToolKey, boolean>;
+// Whether each tool is ready for the login being added (the same tests saving uses), and the account
+// gh, git and Desktop use right now (null when signed out). VS Code hides its account.
+export type GitHubLoginState = Record<GitHubToolKey, boolean> & {
+  now: { gh: string | null; git: string | null; desktop: string | null };
+};
 
 export interface LogLine {
   level: 'info' | 'warn' | 'error';
@@ -143,7 +147,8 @@ export const api = {
     signIn: (tool: GitHubToolKey, user: string) => post('/api/github/signin', { tool, user }),
     save: (profile: NewGitHubProfile) => post('/api/github/save', profile),
     switchTo: (profile: string) => post('/api/github/switch', { profile }),
-    remove: (profile: string) => post('/api/github/delete', { profile }),
+    // signOut: also sign the account out of gh and Git Credential Manager on this PC.
+    remove: (profile: string, signOut: boolean) => post('/api/github/delete', { profile, signOut }),
   },
   claude: {
     // Local files only (no network), cheap enough to poll while waiting for a sign-in.

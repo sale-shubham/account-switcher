@@ -126,7 +126,8 @@ GitHub:
 - **No save-back.** A switch restores the snapshot from save time; Desktop preferences changed
   since then are replaced (the replaced state is kept in `_previous`, one level deep).
 - **gh logout is not recoverable from backups alone**: `gh auth logout` also removes the account
-  from `hosts.yml`; run `gh auth login` again.
+  from `hosts.yml`; run `gh auth login` again. The switcher runs it only when a profile is deleted
+  with "Also sign out of GitHub CLI and Git" ticked (`Remove-GitHubCliLogin`).
 - **`_cleared\<timestamp>` folders accumulate**; delete old ones by hand.
 - **Desktop is reopened from the exact exe path that was running** (`app-3.6.x\GitHubDesktop.exe`).
 - **Desktop's repository list is shared by all profiles** (it lives in IndexedDB; only `Local Storage`
@@ -176,7 +177,8 @@ Both:
   real Claude accounts.**
 
 ---
-*Last updated: 2026-11-15 (Claude Code family; lib/ layout; dashboard UI; how to add a family)*
+*Last updated: 2026-11-15 (gh logout only on an opt-in profile delete)*
+*Previously: 2026-11-15 (Claude Code family; lib/ layout; dashboard UI; how to add a family)*
 *Previously: 2026-11-15 (web UI verified against real apps; untested limitation removed)*
 *Previously: 2026-11-14 (web UI replaces the WinForms window: components, security, limitations)*
 *Previously: 2026-10-30 (core split + login window components and limitations)*

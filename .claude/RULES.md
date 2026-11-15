@@ -86,7 +86,7 @@ When asked to create a ticket (GitHub issue), once a GitHub repo exists:
 - No commented-out code.
 - **Reuse before creating.** Before writing a helper, check:
   - `lib/common.ps1`: `[CredStore]::List/Write/Delete`, `$appRoot`, `$profilePattern`, `Test-ProfileName`, `$switchDir`, `$hasPython`, `Stop-App`, `Start-Apps`, `Copy-Folder`.
-  - `lib/github.ps1`: `$loginPattern`, `Get-GitHubProfile`, `Set-GitHubProfile`, `Remove-GitHubProfile`, `Set-GitIdentity`, `Get-GitHubActiveProfile`, `Backup-Tokens`, `Restore-Tokens`, `Get-DesktopLogin`, `Save-VSCodeSession`, `Set-VSCodeSession`, `Clear-VSCodeSession`, `Test-VSCodeSession`, `Invoke-WithAppsClosed`, `Get-GitHubLoginState`, `Get-GitHubStatus`, `Show-GitHubStatus`, the operations `Save-GitHubProfileState` / `Clear-GitHubAppState` / `Switch-GitHubProfile`.
+  - `lib/github.ps1`: `$loginPattern`, `Read-GitHubProfiles`, `Get-GitHubProfile`, `Set-GitHubProfile`, `Remove-GitHubProfile`, `Remove-GitHubCliLogin` (opt-in delete only, never in a switch), `Set-GitIdentity`, `Get-GitHubActiveProfile`, `Backup-Tokens`, `Restore-Tokens`, `Get-GitHubLoginSpelling` (gh matches logins case-sensitively; never pass a typed login to `gh auth switch`), `Get-DesktopLogin`, `Save-VSCodeSession`, `Set-VSCodeSession`, `Clear-VSCodeSession`, `Test-VSCodeSession`, `Invoke-WithAppsClosed`, `Get-GitHubLoginState`, `Get-GitHubStatus`, `Show-GitHubStatus`, the operations `Save-GitHubProfileState` / `Clear-GitHubAppState` / `Switch-GitHubProfile`.
   - `lib/claude.ps1`: `Get-ClaudeTarget`, `Get-ClaudeProfileNames`, `Read-ClaudeSavedAccount`, `Read-ClaudeCredentials` / `Write-ClaudeCredentials`, `Get-ClaudeAccount`, `Get-ClaudeIdentity`, `Find-ClaudeProfile`, `Get-ClaudeSessions`, `Assert-ClaudeClosed`, `Save-ClaudeSignIn`, `Backup-ClaudeCurrent`, `Start-ClaudeSignIn`, `Get-ClaudeStatus`, `Show-ClaudeStatus`, the operations `Save-ClaudeProfile` / `Clear-ClaudeSignIn` / `Switch-ClaudeProfile` / `Remove-ClaudeProfile`.
   - `web/src/components/`: `ToolCard`, `QuickSwitch`, `Drawer`, `Stepper`, `ConfirmDialog`, `Avatar` for any new tool's card, drawer or wizard.
 - **Entry points stay thin.** `switcher.ps1` (CLI) and `lib/ui-server.ps1` (API server) call the tool families' functions; logic goes in `lib/<tool>.ps1`. The React code only displays state and calls the API - it never decides how a switch, save or clear works.
@@ -180,7 +180,9 @@ RULES.md is auto-injected at the start of every session via the `SessionStart` h
 
 ---
 
-*Last updated: 2026-11-15 (account-switcher: lib/ layout, Claude Code family, reuse lists, test step 3b, fake-data screenshots)*
+*Last updated: 2026-11-15 (reuse list: Remove-GitHubCliLogin)*
+*Previously: 2026-11-15 (reuse list: Read-GitHubProfiles, Get-GitHubLoginSpelling)*
+*Previously: 2026-11-15 (account-switcher: lib/ layout, Claude Code family, reuse lists, test step 3b, fake-data screenshots)*
 *Previously: 2026-11-15 (Remove-AccountProfile in the reuse list)*
 *Previously: 2026-11-14 (React web UI + API server replace the WinForms window: deps, style, test step 4)*
 *Previously: 2026-10-30 (core split, login window: reuse list, thin entry points, GUI test step)*

@@ -14,6 +14,8 @@ export interface GitHubDraft {
   fields: GitHubFields;
   // The login the apps were prepared for; preparing again is offered when the login changes.
   preparedFor: string;
+  // The profile being signed in again ("Sign in again"), or '' when adding a new account.
+  repair: string;
 }
 
 export interface ClaudeDraft {
@@ -65,6 +67,7 @@ export function loadGitHubDraft(): GitHubDraft | null {
     step: stepIn(draft.step, 3),
     fields,
     preparedFor: typeof draft.preparedFor === 'string' ? draft.preparedFor : '',
+    repair: typeof draft.repair === 'string' ? draft.repair : '',
   };
 }
 

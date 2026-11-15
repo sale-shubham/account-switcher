@@ -1,7 +1,7 @@
 # Credential store
 
 Covers `CredStore` / `StoredCredential` (C# compiled by `Add-Type` in `lib/common.ps1`, shared by
-every tool family) and GitHub's `Backup-Tokens` and `Restore-Tokens` (`lib/github.ps1`). Called by
+every tool family) and GitHub's `Backup-Tokens`, `Restore-Tokens` and `Get-GitHubLoginSpelling` (`lib/github.ps1`). Called by
 the switch and save flows; `Get-GitHubLoginState` also uses `[CredStore]::List` to check sign-ins.
 Claude Code's use of it (`account-switch:claude:<profile>`) is in `readme/methods/claude-state.md`.
 
@@ -50,6 +50,15 @@ For every `github-switch:<profile>:*` backup: if the original target is **missin
 **different user**, writes the backup back to the original target and prints
 `Restored token: <target>`. An entry already owned by `$user` is left alone (it may be newer).
 
+### `Get-GitHubLoginSpelling $user`
+GitHub's spelling of a login: the `<user>` part of `gh:github.com:<user>`, else of
+`GitHub - https://api.github.com/<user>`, looked up with `[CredStore]::List` and no `*` (one exact
+target; Windows ignores case in target names). Neither found, or `$user` empty: `$user` unchanged.
+Reads target names only, never `.Blob`. Needed because GitHub logins ignore case but
+`gh auth switch --user` does not ("not logged in to github.com account octocat" when gh knows
+`Octocat`). Used by `Set-GitHubProfile` (stores that spelling), `Save-GitHubProfileState` and
+`Switch-GitHubProfile` (pass it to `gh auth switch`).
+
 ## Notes
 
 - Token bytes never leave memory except into another Credential Manager entry. Never print `.Blob`.
@@ -63,6 +72,7 @@ For every `github-switch:<profile>:*` backup: if the original target is **missin
   The type is only added once per session (`'CredStore' -as [type]` guard).
 
 ---
-*Last updated: 2026-11-15 (CredStore moved to lib/common.ps1; account-switch:claude:<profile> targets)*
+*Last updated: 2026-11-15 (Get-GitHubLoginSpelling: gh's case-sensitive login match)*
+*Previously: 2026-11-15 (CredStore moved to lib/common.ps1; account-switch:claude:<profile> targets)*
 *Previously: 2026-10-30 (code moved to switch-github-core.ps1)*
 *Previously: 2026-10-30 (initial methods doc)*

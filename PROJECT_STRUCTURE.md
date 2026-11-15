@@ -31,7 +31,7 @@ account-switcher/
 │   │   ├── App.tsx                      # dashboard, action runner, confirms, drawers, gate screens
 │   │   ├── api.ts                       # API types (one key per tool) + calls + per-run token
 │   │   ├── run.ts                       # Run / Busy types for the action runner
-│   │   ├── tools.ts                     # GitHub tool names + routesFor; Claude planLabel, expiryNote
+│   │   ├── tools.ts                     # GitHub tool names, routesFor, offAccountTools, listNames; Claude planLabel, expiryNote
 │   │   ├── draft.ts                     # add-account progress per tool in localStorage (survives refresh)
 │   │   ├── icons.tsx                    # inline SVG icons + brand mark
 │   │   ├── styles.css                   # design tokens (light/dark) + all styles
@@ -61,7 +61,7 @@ account-switcher/
 │   │   ├── claude-clear.md              # claude -Clear + add-a-Claude-account procedure
 │   │   └── ui.md                        # -Ui dashboard
 │   └── methods/
-│       ├── credential-store.md          # CredStore, Backup-Tokens, Restore-Tokens, target names
+│       ├── credential-store.md          # CredStore, Backup-Tokens, Restore-Tokens, Get-GitHubLoginSpelling, target names
 │       ├── vscode-session.md            # vscode_secret.py + VS Code DB locations
 │       ├── desktop-state.md             # Desktop Local Storage, Stop-App, Start-Apps
 │       ├── profiles.md                  # GitHub accounts.json, data dir, status functions
@@ -94,7 +94,7 @@ Credential Manager: account-switch:claude:<profile>              # Claude Code s
 |---|---|
 | `switcher.ps1` | Parameters (`github`/`claude`, `<profile>`, `-Save`, `-Clear`, `-Ui`); dot-sources `lib\common.ps1`, `lib\github.ps1`, `lib\claude.ps1` (and `lib\ui-server.ps1` for `-Ui`) and dispatches. No logic of its own |
 | `lib/common.ps1` | `CredStore` / `StoredCredential` (C#); `$appRoot`, `$profilePattern`, `Test-ProfileName`, `$switchDir`, `$hasPython`; `Stop-App`, `Start-Apps`, `Copy-Folder` |
-| `lib/github.ps1` | GitHub state (`$accounts`, `$names`, `$dataDir`, paths, `$tokenTarget`, `$loginPattern`); `Get-GitHubProfile`, `Set-GitHubProfile`, `Remove-GitHubProfile`, `Set-GitIdentity`, `Get-GitHubActiveProfile`, `Get-DesktopSnapshot`, `Get-VSCodeSnapshot`, `Backup-Tokens`, `Restore-Tokens`, `Get-DesktopLogin`, `Save-VSCodeSession`, `Set-VSCodeSession`, `Clear-VSCodeSession`, `Test-VSCodeSession`, `Invoke-WithAppsClosed`, `Get-GitHubLoginState`, `Get-GitHubStatus`, `Show-GitHubStatus`; operations `Clear-GitHubAppState`, `Save-GitHubProfileState`, `Switch-GitHubProfile` |
+| `lib/github.ps1` | GitHub state (`$accounts`, `$names`, `$dataDir`, paths, `$tokenTarget`, `$loginPattern`); `Read-GitHubProfiles`, `Get-GitHubProfile`, `Set-GitHubProfile`, `Remove-GitHubProfile`, `Remove-GitHubCliLogin`, `Set-GitIdentity`, `Get-GitHubActiveProfile`, `Get-DesktopSnapshot`, `Get-VSCodeSnapshot`, `Backup-Tokens`, `Restore-Tokens`, `Get-GitHubLoginSpelling`, `Get-DesktopLogin`, `Save-VSCodeSession`, `Set-VSCodeSession`, `Clear-VSCodeSession`, `Test-VSCodeSession`, `Invoke-WithAppsClosed`, `Get-GitHubLoginState`, `Get-GitHubStatus`, `Show-GitHubStatus`; operations `Clear-GitHubAppState`, `Save-GitHubProfileState`, `Switch-GitHubProfile` |
 | `lib/claude.ps1` | Claude state (`$claudeConfigDir`, `$claudeCredentialsFile`, `$claudeStateFile`, `$claudeDir`, `$claudeExe`, `$credBlobLimit`); `Get-ClaudeTarget`, `Get-ClaudeProfileDir`, `Get-ClaudeProfileNames`, `Read-ClaudeSavedAccount`, `Read-ClaudeCredentials`, `Write-ClaudeCredentials`, `Get-ClaudeAccount`, `Get-ClaudeIdentity`, `Find-ClaudeProfile`, `Get-ClaudeSessions`, `Assert-ClaudeClosed`, `Assert-ClaudeReady`, `Save-ClaudeSignIn`, `Backup-ClaudeCurrent`, `Start-ClaudeSignIn`, `Get-ClaudeStatus`, `Show-ClaudeStatus`; operations `Save-ClaudeProfile`, `Switch-ClaudeProfile`, `Clear-ClaudeSignIn`, `Remove-ClaudeProfile` |
 | `lib/ui-server.ps1` | `$uiPort`, `$uiRoot`, `$uiTypes`, `$uiWindowTitle`, `$uiStopEventName`, `$uiTakeoverSeconds`; `Start-UiServer`, `Open-UiListener`, `Invoke-UiRequest`, `Invoke-UiApi`, `Invoke-UiAction`, `Start-ToolSignIn`, `New-UiToken`, `Send-UiFile`, `Send-UiJson`, `Send-UiResponse`, `Read-UiBody` |
 | `lib/vscode_secret.py` | `KEY` (the VS Code secret key), actions `get` / `set` / `clear` / `has`, exit code `3` = no session |
@@ -134,7 +134,9 @@ Credential Manager: account-switch:claude:<profile>              # Claude Code s
 - No committed `web/dist` — build it once with `npm run build`
 
 ---
-*Last updated: 2026-11-15 (GitHub Pages site for account-switcher in docs/)*
+*Last updated: 2026-11-15 (Remove-GitHubCliLogin)*
+*Previously: 2026-11-15 (Read-GitHubProfiles, Get-GitHubLoginSpelling)*
+*Previously: 2026-11-15 (GitHub Pages site for account-switcher in docs/)*
 *Previously: 2026-11-15 (account-switcher: lib/ layout, Claude Code family, dashboard components)*
 *Previously: 2026-11-15 (MIT LICENSE)*
 *Previously: 2026-11-15 (GitHub Pages site in docs/ — not carried into this repo)*
