@@ -52,6 +52,12 @@ working. Tool families added since keep their state in `%LOCALAPPDATA%\account-s
 a profile saved from the CLI while the server runs shows up on **Refresh**, and a save from the page
 never writes back a list that is missing it.
 
+`$names` is built by piping the properties (`| ForEach-Object { $_.Name }`), here and in
+`Set-GitHubProfile` / `Remove-GitHubProfile`. Never use `@($accounts.PSObject.Properties.Name)`: with no
+profiles (no `accounts.json` yet, or the last one deleted) `.Name` is `$null`, and `@($null)` is one
+entry. That entry reached the web UI as a profile whose fields were all `null`, and its avatar crashed
+the page, which then showed blank.
+
 ### `Get-GitHubProfile $profileName`
 Returns the profile object. `throw` if unknown (lists available names) or if `name`, `email` or
 `user` is empty.
@@ -151,7 +157,8 @@ it has. Run with no arguments to see it.
   (letters, digits, `-`).
 
 ---
-*Last updated: 2026-11-15 (Remove-GitHubProfile -SignOut + Remove-GitHubCliLogin: opt-in sign-out of gh and GCM on delete)*
+*Last updated: 2026-11-15 ($names built by piping: zero profiles no longer becomes one empty profile)*
+*Previously: 2026-11-15 (Remove-GitHubProfile -SignOut + Remove-GitHubCliLogin: opt-in sign-out of gh and GCM on delete)*
 *Previously: 2026-11-15 (Read-GitHubProfiles before every UI request; logins compared ignoring case, saved as GitHub spells them)*
 *Previously: 2026-11-15 (Get-GitHubLoginState: Desktop counts only when the app shows the login; `now` accounts)*
 *Previously: 2026-11-15 (GitHub functions renamed *-GitHub*; accounts.json in the project root; account-switch folder for other tools)*
