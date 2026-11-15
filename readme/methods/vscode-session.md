@@ -1,8 +1,8 @@
 # VS Code session
 
-Covers `vscode_secret.py` and the PowerShell wrappers `Save-VSCodeSession`, `Set-VSCodeSession`,
+Covers `lib/vscode_secret.py` and the PowerShell wrappers `Save-VSCodeSession`, `Set-VSCodeSession`,
 `Clear-VSCodeSession`, `Test-VSCodeSession`, plus `$vscodeDbs` / `$hasVSCode` / `$vscodeExe` in
-`switch-github-core.ps1`.
+`lib/github.ps1`.
 
 ## Where VS Code keeps the GitHub session (VS Code 1.144, verified 2026-10-30)
 
@@ -29,7 +29,7 @@ use the first; `clear` runs on all of them so an old copy cannot come back.
 ## API
 
 ### `vscode_secret.py get|set|clear|has <state.vscdb> [<file>]`
-Run as `python -I vscode_secret.py ...` (isolated mode). `get` writes the value to `<file>`, exit
+Run as `python -I lib\vscode_secret.py ...` (isolated mode). `get` writes the value to `<file>`, exit
 `3` if the key is absent (no file written). `set` writes `<file>`'s content with
 `INSERT OR REPLACE`. `clear` deletes the row. `has` exits `0` if the row exists, `3` if not (reads
 nothing out). Stdlib `sqlite3` only.
@@ -44,8 +44,8 @@ Runs `set`; `throw` on non-zero exit.
 Runs `clear` on every DB in `$vscodeDbs`.
 
 ### `Test-VSCodeSession` → `$true` / `$false`
-Runs `has` on the first DB. Used by `Get-LoginState` (the web UI's VS Code sign-in row) and
-`Get-SwitcherStatus` (the identity panel's VS Code row). Says
+Runs `has` on the first DB. Used by `Get-GitHubLoginState` (the web UI's VS Code sign-in row) and
+`Get-GitHubStatus` (the identity panel's VS Code row). Says
 whether **a** GitHub session exists, not whose. While VS Code is running, a fresh sign-in shows up
 once VS Code has written it to disk (usually within seconds).
 
@@ -63,6 +63,7 @@ once VS Code has written it to disk (usually within seconds).
 - The ciphertext only decrypts for this Windows user on this machine.
 
 ---
-*Last updated: 2026-11-14 (callers are now the web UI and Get-SwitcherStatus)*
-*Previously: 2026-10-30 (`has` action + Test-VSCodeSession for the login window; code moved to switch-github-core.ps1)*
+*Last updated: 2026-11-15 (helper moved to lib/; $hasVSCode uses the shared $hasPython)*
+*Previously: 2026-11-14 (callers are now the web UI and Get-SwitcherStatus)*
+*Previously: 2026-10-30 (`has` action + Test-VSCodeSession for the login window; code moved to lib/github.ps1)*
 *Previously: 2026-10-30 (initial methods doc — location found via main.log)*

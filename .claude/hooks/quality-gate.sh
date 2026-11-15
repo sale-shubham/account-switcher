@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Stop hook: syntax/type gate for the switcher's code. There is no test suite
 # (.claude/RULES.md section 10), so this is the automatic check: when a *.ps1 or *.py
-# in the project root, or a file in web/src, changed since the last passing run,
+# in the project root or lib/, or a file in web/src, changed since the last passing run,
 # parse the scripts with the Windows PowerShell 5.1 parser and Python's ast,
 # typecheck web/ with tsc (never a build), and block the turn from ending (exit 2)
 # until everything passes.
@@ -19,7 +19,7 @@ fi
 
 stamp=".claude/.quality-stamp"
 if [ -f "$stamp" ]; then
-  scripts_changed=$(find . -maxdepth 1 \( -name '*.ps1' -o -name '*.py' \) -newer "$stamp")
+  scripts_changed=$(find . lib -maxdepth 1 \( -name '*.ps1' -o -name '*.py' \) -newer "$stamp" 2>/dev/null)
   web_changed=$(find web/src web/vite.config.ts web/tsconfig.json -newer "$stamp" 2>/dev/null)
 else
   scripts_changed=1
@@ -28,12 +28,12 @@ fi
 [ -z "$scripts_changed" ] && [ -z "$web_changed" ] && exit 0
 
 out=$(powershell.exe -NoProfile -NonInteractive -Command '
-  foreach ($f in Get-ChildItem -Filter *.ps1) {
+  foreach ($f in @(Get-ChildItem -Filter *.ps1) + @(Get-ChildItem lib -Filter *.ps1 -ErrorAction SilentlyContinue)) {
     $errors = $null
     $null = [System.Management.Automation.Language.Parser]::ParseFile($f.FullName, [ref]$null, [ref]$errors)
     foreach ($e in $errors) { $f.Name + ":" + $e.Extent.StartLineNumber + ": " + $e.Message }
   }' 2>&1)
-for f in *.py; do
+for f in *.py lib/*.py; do
   [ -f "$f" ] || continue
   pyout=$(python -I -c 'import ast, sys; ast.parse(open(sys.argv[1], encoding="utf-8").read(), sys.argv[1])' "$f" 2>&1)
   [ -n "$pyout" ] && out="${out:+$out

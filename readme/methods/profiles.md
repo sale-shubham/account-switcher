@@ -1,12 +1,13 @@
 # Profiles and data directory
 
-Covers `accounts.json`, the `%LOCALAPPDATA%\github-switch` layout, `Get-Account`,
-`Set-AccountProfile`, `Remove-AccountProfile`, `Get-ActiveProfile`, `Get-DesktopSnapshot`, `Get-VSCodeSnapshot`,
-`Get-LoginState`, `Get-SwitcherStatus` and `Show-Status` in `switch-github-core.ps1`.
+Covers `accounts.json`, the `%LOCALAPPDATA%\github-switch` layout, `Get-GitHubProfile`,
+`Set-GitHubProfile`, `Remove-GitHubProfile`, `Get-GitHubActiveProfile`, `Get-DesktopSnapshot`, `Get-VSCodeSnapshot`,
+`Get-GitHubLoginState`, `Get-GitHubStatus` and `Show-GitHubStatus` in `lib/github.ps1`.
 
 ## `accounts.json` schema
 
-Next to the scripts (`$PSScriptRoot`). Gitignored — copy from `accounts.example.json`, or let the
+GitHub profiles only (Claude Code profiles: `readme/methods/claude-state.md`). In the project root
+(`$appRoot`, the folder of `switcher.ps1`). Gitignored — copy from `accounts.example.json`, or let the
 web UI create it. A missing file loads as zero profiles.
 
 ```json
@@ -38,13 +39,18 @@ web UI create it. A missing file loads as zero profiles.
 Token backups are **not** here — they are Credential Manager entries
 `github-switch:<profile>:<original target>` (`readme/methods/credential-store.md`).
 
+The folder name is from before Claude Code support; it stays so profiles saved earlier keep
+working. Tool families added since keep their state in `%LOCALAPPDATA%\account-switch\<tool>`
+(`$switchDir`, `lib/common.ps1`). Profile names of every family must match `$profilePattern`
+(`Test-ProfileName`), because they become folder names and target-name parts.
+
 ## API
 
-### `Get-Account $profileName`
+### `Get-GitHubProfile $profileName`
 Returns the profile object. `throw` if unknown (lists available names) or if `name`, `email` or
 `user` is empty.
 
-### `Set-AccountProfile $profileName $gitName $email $user`
+### `Set-GitHubProfile $profileName $gitName $email $user`
 Adds or replaces a profile in `$accounts` / `$names` (script scope) and rewrites `accounts.json`
 as UTF-8 **without** BOM (`[IO.File]::WriteAllText`; `Set-Content -Encoding UTF8` would add one in
 PowerShell 5.1). `throw` if the profile name has anything but letters, digits and `-`, if `$user`
@@ -58,7 +64,7 @@ commits by email - so a second profile with either would be the same account, or
 commits to the wrong one. Git itself does not care: `user.name` / `user.email` are free text, and
 the git name may repeat across profiles. The web UI shows the same two errors on step 1.
 
-### `Remove-AccountProfile $profileName`
+### `Remove-GitHubProfile $profileName`
 Forgets a profile, in this order so a failure never leaves a profile without its backups:
 removes it from `accounts.json` (and `$accounts` / `$names`), deletes `<dataDir>\<profile>`
 (Desktop + VS Code snapshots), then deletes its Credential Manager backups
@@ -68,23 +74,23 @@ first"). The tools' live sign-ins and the GitHub account are not touched, and no
 
 ### `Set-GitIdentity $account`
 Sets global `user.name`, `user.email` and `credential.https://github.com.username` from a profile.
-Used by `Switch-Profile` and `Save-ProfileState`. The GCM username is what makes pushes (also
+Used by `Switch-GitHubProfile` and `Save-GitHubProfileState`. The GCM username is what makes pushes (also
 from VS Code, where prompts are disabled) use this account's stored token.
 
-### `Get-ActiveProfile`
+### `Get-GitHubActiveProfile`
 First line of `current.txt` as a plain `[string]` (so `ConvertTo-Json` does not serialize
-`Get-Content`'s `PSPath` properties), or `''`. Only `Save-ProfileState` and `Switch-Profile` write it, and
+`Get-Content`'s `PSPath` properties), or `''`. Only `Save-GitHubProfileState` and `Switch-GitHubProfile` write it, and
 both also call `Set-GitIdentity`, so it matches git's account.
 
 ### `Get-DesktopSnapshot $profileName` / `Get-VSCodeSnapshot $profileName`
 Paths of the two snapshot items for a profile.
 
-### `Get-LoginState $user` → ordered hashtable `gh`, `git`, `desktop`, `vscode` (booleans)
+### `Get-GitHubLoginState $user` → ordered hashtable `gh`, `git`, `desktop`, `vscode` (booleans)
 Local checks only: Credential Manager `gh:github.com:<user>`, `git credential-manager github list`,
 Credential Manager `GitHub - https://api.github.com/<user>`, and `Test-VSCodeSession` (any account).
-Feeds the web UI's add-account sign-in list (`GET /api/login-state`).
+Feeds the web UI's add-account sign-in list (`GET /api/github/login-state`).
 
-### `Get-SwitcherStatus` → ordered hashtable
+### `Get-GitHubStatus` → ordered hashtable
 Everything the CLI status and the web UI show, gathered once:
 
 ```
@@ -99,8 +105,8 @@ profiles [ { name, gitName, email, user, desktopSaved, vscodeSaved } ]
 
 Served as `GET /api/status`; the field names are the contract with `web/src/api.ts`.
 
-### `Show-Status`
-Prints `Get-SwitcherStatus`: active profile, git `user.name` / `user.email`, GCM default user, gh
+### `Show-GitHubStatus`
+Prints `Get-GitHubStatus`: active profile, git `user.name` / `user.email`, GCM default user, gh
 active account, Desktop login, and each profile with `[desktop, vscode]` markers for the snapshots
 it has. Run with no arguments to see it.
 
@@ -111,8 +117,9 @@ it has. Run with no arguments to see it.
   (letters, digits, `-`).
 
 ---
-*Last updated: 2026-11-15 (one profile per GitHub login and email; Remove-AccountProfile)*
-*Previously: 2026-11-14 (Get-SwitcherStatus for the web UI; $loginPattern + field checks in Set-AccountProfile)*
+*Last updated: 2026-11-15 (GitHub functions renamed *-GitHub*; accounts.json in the project root; account-switch folder for other tools)*
+*Previously: 2026-11-15 (one profile per GitHub login and email; Remove-GitHubProfile)*
+*Previously: 2026-11-14 (Get-GitHubStatus for the web UI; $loginPattern + field checks in Set-GitHubProfile)*
 *Previously: 2026-11-14 (Set-GitIdentity)*
-*Previously: 2026-10-30 (Set-AccountProfile, Get-ActiveProfile, Get-LoginState for the login window)*
+*Previously: 2026-10-30 (Set-GitHubProfile, Get-GitHubActiveProfile, Get-GitHubLoginState for the login window)*
 *Previously: 2026-10-30 (initial methods doc)*

@@ -84,8 +84,13 @@ When asked to create a ticket (GitHub issue), once a GitHub repo exists:
 - Python: one short module docstring, stdlib only, exit codes as the contract with the PowerShell caller (`3` = no session).
 - Comments explain **why**, not what — one line above the non-obvious block. The existing ones (gh-first ordering, backup-before-restore, `gh:github.com:` skip, LevelDB login scan) are the model.
 - No commented-out code.
-- **Reuse before creating.** Before writing a helper, check `switch-github-core.ps1`: `$loginPattern`, `Get-Account`, `Set-AccountProfile`, `Remove-AccountProfile`, `Set-GitIdentity`, `Get-ActiveProfile`, `Backup-Tokens`, `Restore-Tokens`, `Get-DesktopLogin`, `Save-VSCodeSession`, `Set-VSCodeSession`, `Clear-VSCodeSession`, `Test-VSCodeSession`, `Stop-App`, `Start-Apps`, `Invoke-WithAppsClosed`, `Copy-Folder`, `Get-LoginState`, `Get-SwitcherStatus`, `Show-Status`, the operations `Save-ProfileState` / `Clear-AppState` / `Switch-Profile`, and `[CredStore]::List/Write/Delete`.
-- **Entry points stay thin.** `switch-github.ps1` (CLI) and `switch-github-ui.ps1` (API server) call core functions; logic goes in the core. The React code only displays state and calls the API - it never decides how a switch, save or clear works.
+- **Reuse before creating.** Before writing a helper, check:
+  - `lib/common.ps1`: `[CredStore]::List/Write/Delete`, `$appRoot`, `$profilePattern`, `Test-ProfileName`, `$switchDir`, `$hasPython`, `Stop-App`, `Start-Apps`, `Copy-Folder`.
+  - `lib/github.ps1`: `$loginPattern`, `Get-GitHubProfile`, `Set-GitHubProfile`, `Remove-GitHubProfile`, `Set-GitIdentity`, `Get-GitHubActiveProfile`, `Backup-Tokens`, `Restore-Tokens`, `Get-DesktopLogin`, `Save-VSCodeSession`, `Set-VSCodeSession`, `Clear-VSCodeSession`, `Test-VSCodeSession`, `Invoke-WithAppsClosed`, `Get-GitHubLoginState`, `Get-GitHubStatus`, `Show-GitHubStatus`, the operations `Save-GitHubProfileState` / `Clear-GitHubAppState` / `Switch-GitHubProfile`.
+  - `lib/claude.ps1`: `Get-ClaudeTarget`, `Get-ClaudeProfileNames`, `Read-ClaudeSavedAccount`, `Read-ClaudeCredentials` / `Write-ClaudeCredentials`, `Get-ClaudeAccount`, `Get-ClaudeIdentity`, `Find-ClaudeProfile`, `Get-ClaudeSessions`, `Assert-ClaudeClosed`, `Save-ClaudeSignIn`, `Backup-ClaudeCurrent`, `Start-ClaudeSignIn`, `Get-ClaudeStatus`, `Show-ClaudeStatus`, the operations `Save-ClaudeProfile` / `Clear-ClaudeSignIn` / `Switch-ClaudeProfile` / `Remove-ClaudeProfile`.
+  - `web/src/components/`: `ToolCard`, `QuickSwitch`, `Drawer`, `Stepper`, `ConfirmDialog`, `Avatar` for any new tool's card, drawer or wizard.
+- **Entry points stay thin.** `switcher.ps1` (CLI) and `lib/ui-server.ps1` (API server) call the tool families' functions; logic goes in `lib/<tool>.ps1`. The React code only displays state and calls the API - it never decides how a switch, save or clear works.
+- **A new tool family** follows `readme/ARCHITECTURE.md`, "Adding a tool family": `lib/<tool>.ps1`, state in `$switchDir\<tool>`, targets `account-switch:<tool>:<profile>`, routes `/api/<tool>/*`, a key in `Status`, a card + details drawer + wizard.
 - **API responses go through `Send-UiJson`; actions through `Invoke-UiAction`** so every printed line reaches the Activity log. Return `List.ToArray()`, not `@($list)` (PS 5.1 `ConvertTo-Json` bug).
 - **React:** function components + hooks, TypeScript strict, one component per file in `web/src/components/`, types for every API response in `web/src/api.ts`. Colors only through the CSS variables in `styles.css` (light + dark). Dialogs are native `<dialog>` with `showModal()`.
 - **ASCII only** in `.ps1` files (PowerShell 5.1 reads BOM-less files as ANSI).
@@ -95,8 +100,8 @@ When asked to create a ticket (GitHub issue), once a GitHub repo exists:
 ## 7. Environment and secrets
 
 - Never hard-code a token, and never print one (see `CLAUDE.md` hard rule 1). Inspect Credential Manager by **target name and user only** (`cmdkey /list`, or `[CredStore]::List(...)` printing `.Target` / `.User`).
-- Never decrypt VS Code's stored session.
-- Per-profile state lives outside the project: `%LOCALAPPDATA%\github-switch\` and `github-switch:*` entries in Credential Manager. Do not move it into the project folder.
+- Never decrypt VS Code's stored session. Never print a value from Claude Code's `.credentials.json`; inspect it by key names only.
+- Per-profile state lives outside the project: `%LOCALAPPDATA%\github-switch\` + `github-switch:*` (GitHub) and `%LOCALAPPDATA%\account-switch\` + `account-switch:*` (other tools) in Credential Manager. Do not move it into the project folder.
 - Before inspecting a live app database, copy it to the session scratchpad and query the copy.
 
 ---
@@ -113,7 +118,7 @@ to avoid drift.
 ## 9. Reuse audit (grep before writing new code)
 
 ```powershell
-Select-String -Path switch-github-core.ps1, switch-github-ui.ps1 -Pattern '^function '
+Select-String -Path lib\*.ps1 -Pattern '^function '
 ```
 
 If something close already exists, extend or parameterize it instead of adding a near-duplicate.
@@ -125,34 +130,44 @@ If something close already exists, extend or parameterize it instead of adding a
 There is **no test suite**. Verification is manual, and nothing here may touch real tokens or
 close the user's apps without asking first.
 
-1. **Status (safe):** `.\switch-github.ps1` — prints state, changes nothing.
+1. **Status (safe):** `.\switcher.ps1` — prints state, changes nothing.
 2. **VS Code helper (safe):** copy `%USERPROFILE%\.vscode-shared\sharedStorage\state.vscdb` to the
    scratchpad, then run `get` → `clear` → `get` (expect exit 3) → `set` → `get` against the copy
    and compare file hashes.
-3. **Token backup/restore (safe, fake account):** copy the three `.ps1` files + `vscode_secret.py`
-   to the scratchpad with an `accounts.json` containing `work` plus a fake `zz-test` profile; put a
-   `gh.cmd` containing `@exit /b 0` first on `PATH`; dot-source the copy's
-   `switch-github-core.ps1` to load `[CredStore]` (and `Set-AccountProfile` to write the profiles);
+3. **GitHub token backup/restore (safe, fake account):** copy `switcher.ps1` and `lib\` to the
+   scratchpad with an `accounts.json` containing `work` plus a fake `zz-test` profile; put a
+   `gh.cmd` containing `@exit /b 0` first on `PATH`; dot-source the copy's `lib\common.ps1` and
+   `lib\github.ps1` to load `[CredStore]` (and `Set-GitHubProfile` to write the profiles);
    create fake backups / originals with `[CredStore]::Write` (**not** `cmdkey` — it fails on
    targets with spaces); run the copy with `zz-test`; check `Restored token:` lines and compare
    blobs. Clean up every target matching `zz-test`, then run the real script with `work` to put
    git config back. A profile with no snapshots never closes apps.
+3b. **Claude Code (safe, fake config):** in a separate `powershell.exe`, set `$env:CLAUDE_CONFIG_DIR`
+   to a scratchpad folder with fake `.credentials.json` / `.claude.json` (fake token strings), dot-source
+   `lib\common.ps1`, `lib\github.ps1`, `lib\claude.ps1`, then point `$switchDir` / `$claudeDir` at the
+   scratchpad and redefine `Get-ClaudeSessions` to return `@()` (or a fake process to test the
+   refusal). Use `zz-` profile names; first check `[CredStore]::List('account-switch:claude:*')` is
+   empty, and delete every `account-switch:claude:*` entry at the end. **Never override
+   `LOCALAPPDATA`**: the `python` App Execution Alias (Python install manager) then thinks Python is
+   missing and downloads a full Python into that folder.
 4. **Web UI (safe, no actions):**
    - `cd web; npm run check` (typecheck). Never `npm run build` (global rule).
-   - Start `powershell -File .\switch-github.ps1 -Ui` in the background and read the token from
-     its output. Call the API with `X-Switcher-Token`: `GET /api/status`, `GET /api/login-state`,
-     and only *failing* actions (`POST /api/switch` with an unknown profile, `POST /api/save` with
-     an invalid name, `POST /api/signin` with an unknown tool). Check `401` without the token and
-     that `..` paths are not served.
-   - `npx vite` in the background, then headless Edge
-     (`msedge --headless=new --screenshot=<scratchpad>\x.png --window-size=1280,900
-     --virtual-time-budget=15000 --user-data-dir=<scratchpad>\edge-profile <dev url with ?t=>`)
-     for light, dark (`--force-dark-mode --blink-settings=preferredColorScheme=0`) and 500 px wide
-     (headless clamps narrower windows). Read the PNGs. Stop both background tasks afterwards.
+   - Start `powershell -File .\switcher.ps1 -Ui` in the background and read the token from
+     its output. Call the API with `X-Switcher-Token`: `GET /api/status`, `GET /api/github/login-state`,
+     `GET /api/claude/status`, and only *failing* actions (`POST /api/github/switch` or
+     `/api/claude/switch` with an unknown profile, `POST /api/github/save` with an invalid name,
+     `POST /api/github/signin` with an unknown tool). Check `401` without the token and that `..`
+     paths are not served.
+   - Screens with **made-up data only**: a stub API on another port returning fake `Status` JSON,
+     Vite with a temporary config proxying to it, then headless Edge (`--headless=new`, light, dark
+     via `Emulation.setEmulatedMedia`, 500 px wide); drawers are opened by clicking over the DevTools
+     protocol from a small Node script. Read the PNGs. Stop the background processes and delete the
+     temporary config afterwards. The README screenshot is made this way, so it shows no real account.
    - Never the Claude in Chrome tools (global rule).
-5. **Real apps (ask first):** `-Save`, `-Clear`, the Desktop / VS Code swap and the UI's
-   Prepare / Save profile / Switch close and reopen VS Code and GitHub Desktop. Only run with the
-   user's go-ahead.
+5. **Real apps (ask first):** GitHub `-Save`, `-Clear`, the Desktop / VS Code swap and the UI's
+   Prepare / Save profile / Switch close and reopen VS Code and GitHub Desktop. Claude Code switch /
+   sign-out rewrite the real sign-in and need every Claude Code session exited - including the one
+   running Claude in this project. Only run with the user's go-ahead.
 
 Do not add a test framework without explicit instruction.
 
@@ -165,7 +180,8 @@ RULES.md is auto-injected at the start of every session via the `SessionStart` h
 
 ---
 
-*Last updated: 2026-11-15 (Remove-AccountProfile in the reuse list)*
+*Last updated: 2026-11-15 (account-switcher: lib/ layout, Claude Code family, reuse lists, test step 3b, fake-data screenshots)*
+*Previously: 2026-11-15 (Remove-AccountProfile in the reuse list)*
 *Previously: 2026-11-14 (React web UI + API server replace the WinForms window: deps, style, test step 4)*
 *Previously: 2026-10-30 (core split, login window: reuse list, thin entry points, GUI test step)*
 *Previously: 2026-10-30 (initial Claude setup, following the p2x layout)*

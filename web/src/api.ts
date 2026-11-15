@@ -1,8 +1,8 @@
-// Typed client for the PowerShell server's JSON API (switch-github-ui.ps1).
+// Typed client for the PowerShell server's JSON API (lib/ui-server.ps1).
 
-export type ToolKey = 'gh' | 'git' | 'desktop' | 'vscode';
+export type GitHubToolKey = 'gh' | 'git' | 'desktop' | 'vscode';
 
-export interface Profile {
+export interface GitHubProfile {
   name: string;
   gitName: string;
   email: string;
@@ -11,7 +11,7 @@ export interface Profile {
   vscodeSaved: boolean;
 }
 
-export interface Status {
+export interface GitHubStatus {
   activeProfile: string;
   git: { name: string | null; email: string | null };
   tools: {
@@ -20,10 +20,46 @@ export interface Status {
     desktop: { account: string | null };
     vscode: { installed: boolean; session: boolean };
   };
-  profiles: Profile[];
+  profiles: GitHubProfile[];
 }
 
-export type LoginState = Record<ToolKey, boolean>;
+export interface ClaudeAccount {
+  email: string;
+  displayName: string;
+  organization: string;
+  plan: string;
+  tier: string;
+}
+
+export interface ClaudeProfile {
+  name: string;
+  email: string;
+  displayName: string;
+  organization: string;
+  plan: string;
+  tier: string;
+  // When the saved sign-in stops working (ISO date), or null if unknown.
+  expires: string | null;
+  saved: boolean;
+}
+
+export interface ClaudeStatus {
+  installed: boolean;
+  python: boolean;
+  // Claude Code processes running now; a switch or sign-out needs 0.
+  sessions: number;
+  account: ClaudeAccount | null;
+  activeProfile: string;
+  profiles: ClaudeProfile[];
+}
+
+// One key per tool. A new tool adds a key here, a card in App.tsx and its routes in ui-server.ps1.
+export interface Status {
+  github: GitHubStatus;
+  claude: ClaudeStatus;
+}
+
+export type GitHubLoginState = Record<GitHubToolKey, boolean>;
 
 export interface LogLine {
   level: 'info' | 'warn' | 'error';
@@ -35,7 +71,7 @@ export interface ActionResult {
   log: LogLine[];
 }
 
-export interface NewProfile {
+export interface NewGitHubProfile {
   profile: string;
   user: string;
   gitName: string;
@@ -86,7 +122,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       headers: { 'Content-Type': 'application/json', 'X-Switcher-Token': token },
     });
   } catch {
-    throw new ApiError('The switcher is not running. Start it with .\\switch-github.ps1 -Ui and open the link it prints.', 0);
+    throw new ApiError('The switcher is not running. Start it with .\\switcher.ps1 -Ui and open the link it prints.', 0);
   }
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -95,18 +131,29 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
-function post(path: string, body: object): Promise<ActionResult> {
+function post(path: string, body: object = {}): Promise<ActionResult> {
   return request<ActionResult>(path, { method: 'POST', body: JSON.stringify(body) });
 }
 
 export const api = {
   status: () => request<Status>('/api/status'),
-  loginState: (user: string) => request<LoginState>(`/api/login-state?user=${encodeURIComponent(user)}`),
-  prepare: () => post('/api/prepare', {}),
-  signIn: (tool: ToolKey, user: string) => post('/api/signin', { tool, user }),
-  save: (profile: NewProfile) => post('/api/save', profile),
-  switchTo: (profile: string) => post('/api/switch', { profile }),
-  remove: (profile: string) => post('/api/delete', { profile }),
+  github: {
+    loginState: (user: string) => request<GitHubLoginState>(`/api/github/login-state?user=${encodeURIComponent(user)}`),
+    prepare: () => post('/api/github/prepare'),
+    signIn: (tool: GitHubToolKey, user: string) => post('/api/github/signin', { tool, user }),
+    save: (profile: NewGitHubProfile) => post('/api/github/save', profile),
+    switchTo: (profile: string) => post('/api/github/switch', { profile }),
+    remove: (profile: string) => post('/api/github/delete', { profile }),
+  },
+  claude: {
+    // Local files only (no network), cheap enough to poll while waiting for a sign-in.
+    status: () => request<ClaudeStatus>('/api/claude/status'),
+    prepare: () => post('/api/claude/prepare'),
+    signIn: () => post('/api/claude/signin'),
+    save: (profile: string) => post('/api/claude/save', { profile }),
+    switchTo: (profile: string) => post('/api/claude/switch', { profile }),
+    remove: (profile: string) => post('/api/claude/delete', { profile }),
+  },
 };
 
 export const loginPattern = /^[A-Za-z0-9-]{1,39}$/;

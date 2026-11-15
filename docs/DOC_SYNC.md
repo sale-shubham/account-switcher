@@ -1,4 +1,4 @@
-# Documentation sync rules (multiple-github-account)
+# Documentation sync rules (account-switcher)
 
 > **NON-NEGOTIABLE.** Any code change MUST land with its docs update in the same change. Stale
 > docs are treated as a bug.
@@ -9,18 +9,19 @@ Same doc-sync policy as the author's other repositories, with this project's fil
 
 | Change area | Read first |
 |---|---|
-| `Switch-Profile`, step order | `readme/flows/switch.md` |
-| `Save-ProfileState` | `readme/flows/save.md` |
-| `Clear-AppState`, add-account procedure | `readme/flows/clear.md` |
-| `web/src/**` (page, add-account steps, status rows) | `readme/flows/ui.md` |
-| `switch-github-ui.ps1` (server, token, API routes), `web/src/api.ts` | `readme/methods/ui-server.md` |
-| `switch-github.ps1` parameters / dispatch | `README.md` usage + the flow doc of the command |
-| `CredStore`, `Backup-Tokens`, `Restore-Tokens`, `$tokenTarget` | `readme/methods/credential-store.md` |
-| `vscode_secret.py`, `$vscodeDbs`, `$vscodeExe`, `*-VSCodeSession` | `readme/methods/vscode-session.md` |
+| `Switch-GitHubProfile`, step order | `readme/flows/github-switch.md` |
+| `Switch-ClaudeProfile`, `Save-ClaudeProfile`, `Clear-ClaudeSignIn` | `readme/flows/claude-switch.md` / `claude-save.md` / `claude-clear.md` |
+| anything else in `lib/claude.ps1`, `lib/claude_account.py` | `readme/methods/claude-state.md` |
+| `Save-GitHubProfileState` | `readme/flows/github-save.md` |
+| `Clear-GitHubAppState`, add-account procedure | `readme/flows/github-clear.md` |
+| `web/src/**` (dashboard, cards, drawers, wizards) | `readme/flows/ui.md` |
+| `lib/ui-server.ps1` (server, token, API routes), `web/src/api.ts` | `readme/methods/ui-server.md` |
+| `switcher.ps1` parameters / dispatch | `README.md` usage + the flow doc of the command |
+| `CredStore` (`lib/common.ps1`), `Backup-Tokens`, `Restore-Tokens`, `$tokenTarget`, any Credential Manager target name | `readme/methods/credential-store.md` |
+| `lib/vscode_secret.py`, `$vscodeDbs`, `$vscodeExe`, `*-VSCodeSession` | `readme/methods/vscode-session.md` |
 | `$desktopStorage`, `$desktopExe`, `Get-DesktopLogin`, `Stop-App`, `Start-Apps`, `Invoke-WithAppsClosed`, `Copy-Folder` | `readme/methods/desktop-state.md` |
-| `accounts.json`, `$dataDir` layout, `$loginPattern`, `Get-Account`, `Set-AccountProfile`, `Remove-AccountProfile`, `Get-ActiveProfile`, `Get-LoginState`, `Get-SwitcherStatus`, `Show-Status` | `readme/methods/profiles.md` |
+| `accounts.json`, `$dataDir` layout, `$loginPattern`, `Get-GitHubProfile`, `Set-GitHubProfile`, `Remove-GitHubProfile`, `Get-GitHubActiveProfile`, `Get-GitHubLoginState`, `Get-GitHubStatus`, `Show-GitHubStatus` | `readme/methods/profiles.md` |
 | Storage locations, lifecycle, limitations | `readme/ARCHITECTURE.md` |
-| `docs/index.html` (public GitHub Pages site) | `README.md` - the site repeats its facts |
 
 ## Additions trigger
 
@@ -28,13 +29,13 @@ Same doc-sync policy as the author's other repositories, with this project's fil
 |---|---|
 | New command / parameter | **Create `readme/flows/<command>.md`** + register in `CLAUDE.md` + `README.md` usage block + `PROJECT_STRUCTURE.md` module map |
 | New screen, step, button or status row in the web UI | `readme/flows/ui.md` (page / steps / status table) + `readme/methods/ui-server.md` client table if a file was added |
-| New API route | `switch-github-ui.ps1` `Invoke-UiApi` + `web/src/api.ts` + `readme/methods/ui-server.md` API table |
+| New API route | `lib/ui-server.ps1` `Invoke-UiApi` + `web/src/api.ts` + `readme/methods/ui-server.md` API table |
 | New npm dependency in `web/` | Justify it (`.claude/RULES.md` §2) + `PROJECT_STRUCTURE.md` conventions |
 | New helper function | The owning `readme/methods/<domain>.md` + `PROJECT_STRUCTURE.md` module map + `.claude/RULES.md` §6 reuse list |
-| New app or tool covered (e.g. Cursor, SSH) | `readme/ARCHITECTURE.md` storage map + new `readme/methods/<app>.md` + `README.md` + `CLAUDE.md` registry |
+| New tool family (e.g. another CLI with its own login) | Follow `readme/ARCHITECTURE.md` "Adding a tool family": `lib/<tool>.ps1` + routes + `Status` key + card/drawer/wizard; `readme/ARCHITECTURE.md` storage map + lifecycle + limitations; new `readme/flows/<tool>-*.md` + `readme/methods/<tool>-state.md`; `README.md` + `CLAUDE.md` registry and hard rules + `PROJECT_STRUCTURE.md` + `.claude/RULES.md` reuse list |
 | New Credential Manager target pattern | `$tokenTarget` + `readme/methods/credential-store.md` target table + `readme/ARCHITECTURE.md` storage map |
-| New file under `%LOCALAPPDATA%\github-switch` | `readme/methods/profiles.md` data-dir layout |
-| New field in `accounts.json` | `Get-Account` validation + `accounts.example.json` + `readme/methods/profiles.md` schema + `README.md` setup |
+| New file under `%LOCALAPPDATA%\github-switch` or `account-switch` | `readme/methods/profiles.md` / `claude-state.md` data layout |
+| New field in `accounts.json` | `Get-GitHubProfile` validation + `accounts.example.json` + `readme/methods/profiles.md` schema + `README.md` setup |
 | New standing rule | `.claude/RULES.md` (+ `CLAUDE.md` hard rules if switcher-specific) |
 | New skill | `.claude/skills/<skill>/SKILL.md` + skills table in `CLAUDE.md` + `PROJECT_STRUCTURE.md` tree |
 | New hook | `.claude/hooks/` + `.claude/settings.json` + `PROJECT_STRUCTURE.md` tree |
@@ -43,14 +44,14 @@ Same doc-sync policy as the author's other repositories, with this project's fil
 
 | You changed | You MUST also update |
 |---|---|
-| Order of steps in the switch | `readme/flows/switch.md` steps + failure behavior + `readme/ARCHITECTURE.md` lifecycle |
-| Restore policy (when a backup overwrites) | `readme/methods/credential-store.md` + `readme/flows/switch.md` + `CLAUDE.md` hard rule 5 |
+| Order of steps in a switch | the tool's `readme/flows/<tool>-switch.md` steps + failure behavior + `readme/ARCHITECTURE.md` lifecycle |
+| Restore policy (when a backup overwrites) | `readme/methods/credential-store.md` + `readme/flows/github-switch.md` + `CLAUDE.md` hard rule 5 |
 | VS Code DB path or secret key | `vscode_secret.py` `KEY` + `$vscodeDbs` + `readme/methods/vscode-session.md` + `CLAUDE.md` hard rule 7 + `readme/ARCHITECTURE.md` storage map |
 | Desktop storage path or login detection | `readme/methods/desktop-state.md` + `readme/ARCHITECTURE.md` storage map |
 | App close timeout / close method | `readme/methods/desktop-state.md` (`Stop-App`) |
 | `vscode_secret.py` exit codes | `readme/methods/vscode-session.md` + the PowerShell callers |
+| Claude Code file layout (`.credentials.json` / `.claude.json` keys) or `claude_account.py` actions | `readme/methods/claude-state.md` + `readme/ARCHITECTURE.md` storage map + `CLAUDE.md` hard rule 16 |
 | A tool version re-verified | `PROJECT_STRUCTURE.md` tool versions |
-| `README.md` features, requirements, quick start, CLI usage or FAQ | `docs/index.html` (public site) + `<lastmod>` in `docs/sitemap.xml` |
 
 ## Removals trigger
 
@@ -70,8 +71,9 @@ Same doc-sync policy as the author's other repositories, with this project's fil
 - **Every doc carries a `*Last updated:*` footer** with a one-line reason, newest first.
 
 ---
-*Last updated: 2026-11-15 (public site docs/index.html rows)*
-*Previously: 2026-11-15 (Remove-AccountProfile row)*
+*Last updated: 2026-11-15 (account-switcher: Claude Code rows, lib/ paths, tool-family addition; site rows dropped)*
+*Previously: 2026-11-15 (public site docs/index.html rows)*
+*Previously: 2026-11-15 (Remove-GitHubProfile row)*
 *Previously: 2026-11-14 (web UI + API replace the login window)*
 *Previously: 2026-10-30 (core split + login window rows)*
 *Previously: 2026-10-30 (initial doc structure)*

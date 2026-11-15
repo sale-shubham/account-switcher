@@ -1,8 +1,8 @@
 # GitHub Desktop state and app control
 
-Covers `$desktopStorage`, `$desktopExe`, `Get-DesktopLogin`, `Stop-App`, `Start-Apps`,
-`Invoke-WithAppsClosed` and `Copy-Folder` in `switch-github-core.ps1`. The app-control functions
-are also used for VS Code.
+Covers `$desktopStorage`, `$desktopExe`, `Get-DesktopLogin` and `Invoke-WithAppsClosed` in
+`lib/github.ps1`, and the shared `Stop-App`, `Start-Apps` and `Copy-Folder` in `lib/common.ps1`.
+The app-control functions are also used for VS Code.
 
 ## How GitHub Desktop 3.6.7 stores its sign-in
 
@@ -36,7 +36,7 @@ changes?)..."`. Never kills.
 ### `Invoke-WithAppsClosed -Action { ... } [-Desktop $bool] [-VSCode $bool]`
 Closes GitHub Desktop and/or VS Code (both by default) with `Stop-App`, runs `-Action`, then
 reopens whichever were running — in `finally`, so also after a failure. Every operation that
-touches app storage (`Save-ProfileState`, `Clear-AppState`, `Switch-Profile`) runs inside it. The
+touches app storage (`Save-GitHubProfileState`, `Clear-GitHubAppState`, `Switch-GitHubProfile`) runs inside it. The
 action block sees the caller's variables (dynamic scope); avoid naming its variables `$Desktop`,
 `$VSCode` or `$Action`.
 
@@ -62,8 +62,9 @@ Deletes `$to` if present, creates its parent, copies `$from` recursively. All wi
 - Desktop is reopened from the path that was running (`%LOCALAPPDATA%\GitHubDesktop\app-3.6.x\GitHubDesktop.exe`).
 
 ---
-*Last updated: 2026-11-15 (Invoke-WithAppsClosed refuses to close VS Code from VS Code's own terminal)*
+*Last updated: 2026-11-15 (Stop-App, Start-Apps, Copy-Folder moved to lib/common.ps1)*
+*Previously: 2026-11-15 (Invoke-WithAppsClosed refuses to close VS Code from VS Code's own terminal)*
 *Previously: 2026-11-14 (sign-in step moved to the web UI)*
 *Previously: 2026-11-14 (Get-DesktopLogin reads with FileShare.ReadWrite so it works while Desktop runs)*
-*Previously: 2026-10-30 (Invoke-WithAppsClosed + $desktopExe; code moved to switch-github-core.ps1)*
+*Previously: 2026-10-30 (Invoke-WithAppsClosed + $desktopExe; code moved to lib/github.ps1)*
 *Previously: 2026-10-30 (initial methods doc)*

@@ -1,11 +1,12 @@
-# Web UI server: serves the React app (web\dist) and a small JSON API over the core functions on
-# http://localhost:<port>/. Dot-sourced by switch-github.ps1 -Ui after switch-github-core.ps1.
+# Web UI server: serves the React app (web\dist) and a small JSON API over the tool functions
+# (github.ps1, claude.ps1) on http://localhost:<port>/. Dot-sourced by switcher.ps1 -Ui after them.
 # One request at a time on this thread, so two actions can never run at once.
 
 $uiPort = 47821
-$uiRoot = Join-Path $PSScriptRoot 'web\dist'
+$uiRoot = Join-Path $appRoot 'web\dist'
 $uiWindowTitle = 'Account Switcher server - keep open, Ctrl+C to stop'
 # A newer -Ui sets this event; the running server sees it between requests and hands over the port.
+# The name predates Claude Code support; kept so this server and the GitHub-only one replace each other.
 $uiStopEventName = 'Local\GitHubAccountSwitcherUi-Stop'
 # Long enough for a running switch to finish (two apps closing at up to 20 s each).
 $uiTakeoverSeconds = 90
@@ -76,6 +77,7 @@ function Start-ToolSignIn($tool, $user) {
             Start-Process $vscodeExe -ArgumentList '--reuse-window'
             Write-Host 'VS Code: click the Accounts icon at the bottom of the left bar, sign in with GitHub, then approve in the browser.'
         }
+        'claude' { Start-ClaudeSignIn }
         default { throw "Unknown tool '$tool'." }
     }
 }
@@ -125,41 +127,67 @@ function Invoke-UiApi($context) {
     if ($request.HttpMethod -eq 'POST') { Write-Host "$(Get-Date -Format 'HH:mm:ss') $route" }
     switch ($route) {
         'GET /api/status' {
-            Send-UiJson $context (Get-SwitcherStatus)
+            # One key per tool; the page renders one card per key.
+            Send-UiJson $context ([ordered]@{ github = Get-GitHubStatus; claude = Get-ClaudeStatus })
         }
-        'GET /api/login-state' {
+
+        'GET /api/github/login-state' {
             $user = "$($request.QueryString['user'])".Trim()
             if ($user -notmatch $loginPattern) { Send-UiJson $context @{ error = 'A valid GitHub login is required.' } 400; return }
-            Send-UiJson $context (Get-LoginState $user)
+            Send-UiJson $context (Get-GitHubLoginState $user)
         }
-        'POST /api/prepare' {
+        'POST /api/github/prepare' {
             Send-UiJson $context (Invoke-UiAction {
-                $active = Get-ActiveProfile
+                $active = Get-GitHubActiveProfile
                 Invoke-WithAppsClosed {
-                    if ($active -and $names -contains $active) { Save-ProfileState $active }
-                    Clear-AppState
+                    if ($active -and $names -contains $active) { Save-GitHubProfileState $active }
+                    Clear-GitHubAppState
                 }
             })
         }
-        'POST /api/signin' {
+        'POST /api/github/signin' {
             $body = Read-UiBody $request
-            Send-UiJson $context (Invoke-UiAction { Start-ToolSignIn "$($body.tool)" "$($body.user)".Trim() })
+            $tool = "$($body.tool)"
+            if ($tool -eq 'claude') { Send-UiJson $context @{ error = "Unknown tool '$tool'." } 400; return }
+            Send-UiJson $context (Invoke-UiAction { Start-ToolSignIn $tool "$($body.user)".Trim() })
         }
-        'POST /api/save' {
+        'POST /api/github/save' {
             $body = Read-UiBody $request
             Send-UiJson $context (Invoke-UiAction {
                 $profileName = "$($body.profile)".Trim()
-                Set-AccountProfile $profileName "$($body.gitName)".Trim() "$($body.email)".Trim() "$($body.user)".Trim()
-                Invoke-WithAppsClosed { Save-ProfileState $profileName }
+                Set-GitHubProfile $profileName "$($body.gitName)".Trim() "$($body.email)".Trim() "$($body.user)".Trim()
+                Invoke-WithAppsClosed { Save-GitHubProfileState $profileName }
             })
         }
-        'POST /api/delete' {
+        'POST /api/github/delete' {
             $body = Read-UiBody $request
-            Send-UiJson $context (Invoke-UiAction { Remove-AccountProfile "$($body.profile)" })
+            Send-UiJson $context (Invoke-UiAction { Remove-GitHubProfile "$($body.profile)" })
         }
-        'POST /api/switch' {
+        'POST /api/github/switch' {
             $body = Read-UiBody $request
-            Send-UiJson $context (Invoke-UiAction { Switch-Profile "$($body.profile)" })
+            Send-UiJson $context (Invoke-UiAction { Switch-GitHubProfile "$($body.profile)" })
+        }
+
+        'GET /api/claude/status' {
+            Send-UiJson $context (Get-ClaudeStatus)
+        }
+        'POST /api/claude/prepare' {
+            Send-UiJson $context (Invoke-UiAction { Clear-ClaudeSignIn })
+        }
+        'POST /api/claude/signin' {
+            Send-UiJson $context (Invoke-UiAction { Start-ToolSignIn 'claude' '' })
+        }
+        'POST /api/claude/save' {
+            $body = Read-UiBody $request
+            Send-UiJson $context (Invoke-UiAction { Save-ClaudeProfile "$($body.profile)".Trim() })
+        }
+        'POST /api/claude/delete' {
+            $body = Read-UiBody $request
+            Send-UiJson $context (Invoke-UiAction { Remove-ClaudeProfile "$($body.profile)" })
+        }
+        'POST /api/claude/switch' {
+            $body = Read-UiBody $request
+            Send-UiJson $context (Invoke-UiAction { Switch-ClaudeProfile "$($body.profile)" })
         }
         default {
             Send-UiJson $context @{ error = "Unknown API route: $route" } 404
@@ -207,7 +235,7 @@ function Start-UiServer {
     # Prepare / Save / Switch close VS Code, which ends every process in its terminals - this server
     # included, mid-action. Started from there, reopen in a PowerShell window of its own instead.
     if ($env:TERM_PROGRAM -eq 'vscode') {
-        $cli = Join-Path $PSScriptRoot 'switch-github.ps1'
+        $cli = Join-Path $appRoot 'switcher.ps1'
         $saved = $env:TERM_PROGRAM
         $env:TERM_PROGRAM = $null
         try { Start-Process powershell.exe -ArgumentList '-NoProfile', '-NoExit', '-File', "`"$cli`"", '-Ui' } finally { $env:TERM_PROGRAM = $saved }

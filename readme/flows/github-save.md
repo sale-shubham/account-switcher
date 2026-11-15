@@ -2,15 +2,15 @@
 
 ## Purpose
 
-`.\switch-github.ps1 -Save <profile>` (or **Save profile** in the `-Ui` web page) — capture what
+`.\switcher.ps1 github -Save <profile>` (or **Save profile** in the `-Ui` web page) — capture what
 is signed in right now into `<profile>`: the Desktop sign-in state, the VS Code GitHub session, and
-backups of the account's tokens. Implemented by `Save-ProfileState` in `switch-github-core.ps1`,
+backups of the account's tokens. Implemented by `Save-GitHubProfileState` in `lib/github.ps1`,
 run inside `Invoke-WithAppsClosed`. The window first writes the profile to `accounts.json` with
-`Set-AccountProfile`.
+`Set-GitHubProfile`.
 
 ## Steps
 
-1. `<profile>` is required; `Get-Account` validates it before any app is closed.
+1. `<profile>` is required; `Get-GitHubProfile` validates it before any app is closed.
 2. `Invoke-WithAppsClosed` closes GitHub Desktop, then VS Code (normal close), and remembers which were running.
 3. Desktop: `Get-DesktopLogin` reads the signed-in login from `Local Storage`.
    - Equal to the profile's `user` → `Copy-Folder` to `<dataDir>\<profile>\Local Storage`.
@@ -50,7 +50,8 @@ run inside `Invoke-WithAppsClosed`. The window first writes the profile to `acco
   for how reliable that is.
 
 ---
-*Last updated: 2026-11-14 (Save profile button now in the -Ui web page; example made generic)*
+*Last updated: 2026-11-15 (GitHub family in lib/github.ps1; functions renamed *-GitHub*; CLI is switcher.ps1 github -Save)*
+*Previously: 2026-11-14 (Save profile button now in the -Ui web page; example made generic)*
 *Previously: 2026-11-14 (Save also switches gh and sets git identity + GCM user, so "Active profile" is true)*
-*Previously: 2026-10-30 (moved into Save-ProfileState; also used by the -Login window)*
+*Previously: 2026-10-30 (moved into Save-GitHubProfileState; also used by the -Login window)*
 *Previously: 2026-10-30 (initial flow doc)*

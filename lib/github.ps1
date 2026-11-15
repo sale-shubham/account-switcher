@@ -1,108 +1,14 @@
-# Shared state and functions for the GitHub account switcher.
-# Dot-sourced by switch-github.ps1; the web UI server (switch-github-ui.ps1) calls the same functions.
-# Defines script-scope variables ($accounts, $names, paths) and functions only - runs no command.
+# GitHub: switches the account used by the GitHub CLI, git (identity + Git Credential Manager),
+# GitHub Desktop and VS Code's GitHub sign-in. Dot-sourced by switcher.ps1 after common.ps1; the web
+# UI server (ui-server.ps1) calls the same functions. Defines variables and functions only.
 
-if (-not ('CredStore' -as [type])) {
-    Add-Type -TypeDefinition @'
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Runtime.InteropServices;
-using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
-
-public class StoredCredential {
-    public string Target;
-    public string User;
-    public byte[] Blob;
-    public int Persist;
-}
-
-public static class CredStore {
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    struct CREDENTIAL {
-        public int Flags;
-        public int Type;
-        public string TargetName;
-        public string Comment;
-        public FILETIME LastWritten;
-        public int CredentialBlobSize;
-        public IntPtr CredentialBlob;
-        public int Persist;
-        public int AttributeCount;
-        public IntPtr Attributes;
-        public string TargetAlias;
-        public string UserName;
-    }
-
-    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    static extern bool CredEnumerateW(string filter, int flags, out int count, out IntPtr creds);
-    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    static extern bool CredWriteW(ref CREDENTIAL cred, int flags);
-    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    static extern bool CredDeleteW(string target, int type, int flags);
-    [DllImport("advapi32.dll")]
-    static extern void CredFree(IntPtr buffer);
-
-    const int CRED_TYPE_GENERIC = 1;
-    const int ERROR_NOT_FOUND = 1168;
-
-    public static StoredCredential[] List(string filter) {
-        if (string.IsNullOrEmpty(filter)) filter = null;
-        var result = new List<StoredCredential>();
-        int count;
-        IntPtr creds;
-        if (!CredEnumerateW(filter, 0, out count, out creds)) {
-            int err = Marshal.GetLastWin32Error();
-            if (err == ERROR_NOT_FOUND) return result.ToArray();
-            throw new Win32Exception(err);
-        }
-        try {
-            for (int i = 0; i < count; i++) {
-                IntPtr p = Marshal.ReadIntPtr(creds, i * IntPtr.Size);
-                var c = (CREDENTIAL)Marshal.PtrToStructure(p, typeof(CREDENTIAL));
-                if (c.Type != CRED_TYPE_GENERIC) continue;
-                var blob = new byte[c.CredentialBlobSize];
-                if (c.CredentialBlobSize > 0) Marshal.Copy(c.CredentialBlob, blob, 0, c.CredentialBlobSize);
-                result.Add(new StoredCredential { Target = c.TargetName, User = c.UserName, Blob = blob, Persist = c.Persist });
-            }
-        } finally {
-            CredFree(creds);
-        }
-        return result.ToArray();
-    }
-
-    public static void Write(string target, string user, byte[] blob, int persist) {
-        var c = new CREDENTIAL();
-        c.Type = CRED_TYPE_GENERIC;
-        c.TargetName = target;
-        c.UserName = user;
-        c.Persist = persist;
-        c.CredentialBlobSize = blob.Length;
-        c.CredentialBlob = Marshal.AllocHGlobal(Math.Max(blob.Length, 1));
-        try {
-            Marshal.Copy(blob, 0, c.CredentialBlob, blob.Length);
-            if (!CredWriteW(ref c, 0)) throw new Win32Exception(Marshal.GetLastWin32Error());
-        } finally {
-            Marshal.FreeHGlobal(c.CredentialBlob);
-        }
-    }
-
-    public static void Delete(string target) {
-        if (!CredDeleteW(target, CRED_TYPE_GENERIC, 0)) {
-            int err = Marshal.GetLastWin32Error();
-            if (err != ERROR_NOT_FOUND) throw new Win32Exception(err);
-        }
-    }
-}
-'@
-}
-
-$accountsFile = Join-Path $PSScriptRoot 'accounts.json'
+$accountsFile = Join-Path $appRoot 'accounts.json'
 # No accounts.json yet is fine: the web UI creates it with the first profile.
 $accounts = if (Test-Path $accountsFile) { Get-Content $accountsFile -Raw | ConvertFrom-Json } else { [pscustomobject]@{} }
 $names = @($accounts.PSObject.Properties.Name)
 $hasGh = [bool](Get-Command gh -ErrorAction SilentlyContinue)
 
+# Older than the account-switch folder (common.ps1); kept so profiles saved before stay where they are.
 $dataDir = Join-Path $env:LOCALAPPDATA 'github-switch'
 New-Item -ItemType Directory -Force $dataDir | Out-Null
 $currentFile = Join-Path $dataDir 'current.txt'
@@ -116,16 +22,16 @@ $vscodeDbs = @(@(
     (Join-Path $env:APPDATA 'Code\User\globalStorage\state.vscdb')
 ) | Where-Object { Test-Path $_ })
 $vscodeHelper = Join-Path $PSScriptRoot 'vscode_secret.py'
-$hasVSCode = $vscodeDbs.Count -gt 0 -and [bool](Get-Command python -ErrorAction SilentlyContinue)
+$hasVSCode = $vscodeDbs.Count -gt 0 -and $hasPython
 # Token entries written by GCM (git:...), gh (gh:github.com:<user>) and GitHub Desktop (GitHub - ...).
 # gh's active-account entry "gh:github.com:" has no user name, so the per-user filter below skips it.
 $tokenTarget = '^(git:https://(.+@)?github\.com|gh:github\.com:|GitHub - https://api\.github\.com/)'
 # GitHub's own login rule. Logins also go on native command lines, so nothing else may pass.
 $loginPattern = '^[A-Za-z0-9-]{1,39}$'
 
-function Get-Account($profileName) {
+function Get-GitHubProfile($profileName) {
     if ($names -notcontains $profileName) {
-        throw "Unknown profile '$profileName'. Available: $($names -join ', ')"
+        throw "Unknown GitHub profile '$profileName'. Available: $($names -join ', ')"
     }
     $account = $accounts.$profileName
     foreach ($field in 'name', 'email', 'user') {
@@ -135,10 +41,8 @@ function Get-Account($profileName) {
 }
 
 # Adds or replaces a profile in accounts.json and in the loaded $accounts / $names.
-function Set-AccountProfile($profileName, $gitName, $email, $user) {
-    if ($profileName -notmatch '^[A-Za-z0-9-]+$') {
-        throw "Profile name '$profileName' may only contain letters, digits and '-'."
-    }
+function Set-GitHubProfile($profileName, $gitName, $email, $user) {
+    Test-ProfileName $profileName
     if ($user -notmatch $loginPattern) { throw "GitHub login '$user' is not valid (letters, digits and '-', up to 39)." }
     if (-not ($gitName -and $email)) { throw 'Git name and email are required.' }
     # One profile per GitHub account: GitHub logins are unique, and an email belongs to one account at
@@ -162,11 +66,11 @@ function Set-AccountProfile($profileName, $gitName, $email, $user) {
 
 # Forgets a profile: its accounts.json entry, its app snapshots and its token backups. Live sign-ins
 # (the tools' own Credential Manager entries) are not touched, so no account is signed out.
-function Remove-AccountProfile($profileName) {
-    $null = Get-Account $profileName
+function Remove-GitHubProfile($profileName) {
+    $null = Get-GitHubProfile $profileName
     # The name becomes a folder path below; never let it reach _previous, _cleared or a parent.
-    if ($profileName -notmatch '^[A-Za-z0-9-]+$') { throw "Profile name '$profileName' is not valid." }
-    if ((Get-ActiveProfile) -eq $profileName) { throw "'$profileName' is the active profile. Switch to another profile first." }
+    Test-ProfileName $profileName
+    if ((Get-GitHubActiveProfile) -eq $profileName) { throw "'$profileName' is the active profile. Switch to another profile first." }
     # Profile entry first: if a later step fails, only unreferenced leftovers remain, never a profile without its backups.
     $script:accounts.PSObject.Properties.Remove($profileName)
     [IO.File]::WriteAllText($accountsFile, ($script:accounts | ConvertTo-Json))
@@ -184,7 +88,7 @@ function Set-GitIdentity($account) {
     git config --global credential.https://github.com.username $account.user
 }
 
-function Get-ActiveProfile {
+function Get-GitHubActiveProfile {
     # [string]: Get-Content strings carry PSPath etc., which ConvertTo-Json would serialize.
     if (Test-Path $currentFile) { [string](Get-Content $currentFile -TotalCount 1) } else { '' }
 }
@@ -253,26 +157,6 @@ function Test-VSCodeSession {
     $LASTEXITCODE -eq 0
 }
 
-# Closes the app's windows the normal way, so unsaved-work prompts still apply.
-# Returns the exe path if the app was running, so it can be reopened.
-function Stop-App($processName, $label) {
-    $procs = @(Get-Process $processName -ErrorAction SilentlyContinue)
-    if (-not $procs) { return $null }
-    $exe = ($procs | Where-Object Path | Select-Object -First 1).Path
-    $deadline = (Get-Date).AddSeconds(20)
-    while ((Get-Date) -lt $deadline) {
-        $procs = @(Get-Process $processName -ErrorAction SilentlyContinue)
-        if (-not $procs) { return $exe }
-        foreach ($p in $procs) { if ($p.MainWindowHandle -ne 0) { $null = $p.CloseMainWindow() } }
-        Start-Sleep -Milliseconds 500
-    }
-    throw "$label did not close (unsaved changes?). Close it and retry."
-}
-
-function Start-Apps($exes) {
-    foreach ($exe in $exes) { if ($exe) { Start-Process $exe } }
-}
-
 # Runs $Action with GitHub Desktop and/or VS Code closed, then reopens whichever were running - also after a failure.
 function Invoke-WithAppsClosed([scriptblock]$Action, [bool]$Desktop = $true, [bool]$VSCode = $true) {
     # Closing VS Code ends every process in its terminals - this script too, halfway, with nothing reopened.
@@ -289,14 +173,8 @@ function Invoke-WithAppsClosed([scriptblock]$Action, [bool]$Desktop = $true, [bo
     }
 }
 
-function Copy-Folder($from, $to) {
-    if (Test-Path $to) { Remove-Item $to -Recurse -Force -ErrorAction Stop }
-    New-Item -ItemType Directory -Force (Split-Path $to) | Out-Null
-    Copy-Item $from $to -Recurse -ErrorAction Stop
-}
-
 # Which tools hold a sign-in for $user right now. Local checks only, no network.
-function Get-LoginState($user) {
+function Get-GitHubLoginState($user) {
     [ordered]@{
         gh      = [bool]([CredStore]::List("gh:github.com:$user"))
         git     = @(git credential-manager github list 2>$null) -contains $user
@@ -305,12 +183,12 @@ function Get-LoginState($user) {
     }
 }
 
-# Everything Show-Status prints and the web UI shows. Only gh's account needs the network (gh api user).
-function Get-SwitcherStatus {
+# Everything Show-GitHubStatus prints and the web UI shows. Only gh's account needs the network (gh api user).
+function Get-GitHubStatus {
     $gcmUser = git config --global credential.https://github.com.username
     $gcmUsers = @(git credential-manager github list 2>$null)
     [ordered]@{
-        activeProfile = Get-ActiveProfile
+        activeProfile = Get-GitHubActiveProfile
         git           = [ordered]@{
             name  = (git config --global user.name)
             email = (git config --global user.email)
@@ -334,25 +212,26 @@ function Get-SwitcherStatus {
     }
 }
 
-function Show-Status {
-    $status = Get-SwitcherStatus
-    Write-Host "Active profile    : $($status.activeProfile)"
-    Write-Host "git user.name     : $($status.git.name)"
-    Write-Host "git user.email    : $($status.git.email)"
-    Write-Host "GCM default user  : $($status.tools.git.account)"
-    if ($hasGh) { Write-Host "gh active account : $($status.tools.gh.account)" }
-    Write-Host "GitHub Desktop    : $($status.tools.desktop.account)"
+function Show-GitHubStatus {
+    $status = Get-GitHubStatus
+    Write-Host 'GitHub'
+    Write-Host "  Active profile    : $($status.activeProfile)"
+    Write-Host "  git user.name     : $($status.git.name)"
+    Write-Host "  git user.email    : $($status.git.email)"
+    Write-Host "  GCM default user  : $($status.tools.git.account)"
+    if ($hasGh) { Write-Host "  gh active account : $($status.tools.gh.account)" }
+    Write-Host "  GitHub Desktop    : $($status.tools.desktop.account)"
     $list = foreach ($p in $status.profiles) {
         $saved = @()
         if ($p.desktopSaved) { $saved += 'desktop' }
         if ($p.vscodeSaved) { $saved += 'vscode' }
         if ($saved) { "$($p.name) [$($saved -join ', ')]" } else { $p.name }
     }
-    Write-Host "Profiles          : $($list -join ', ')"
+    Write-Host "  Profiles          : $($list -join ', ')"
 }
 
 # Moves the current Desktop / VS Code sign-in aside so both start signed out. Apps must be closed.
-function Clear-AppState {
+function Clear-GitHubAppState {
     $dest = Join-Path $dataDir ('_cleared\' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
     New-Item -ItemType Directory -Force $dest | Out-Null
     if (Test-Path $desktopStorage) { Move-Item $desktopStorage $dest -ErrorAction Stop }
@@ -366,8 +245,8 @@ function Clear-AppState {
 }
 
 # Captures the current Desktop sign-in, VS Code session and tokens into a profile. Apps must be closed.
-function Save-ProfileState($profileName) {
-    $account = Get-Account $profileName
+function Save-GitHubProfileState($profileName) {
+    $account = Get-GitHubProfile $profileName
 
     $login = Get-DesktopLogin
     if ($login -eq $account.user) {
@@ -399,8 +278,8 @@ function Save-ProfileState($profileName) {
     Set-Content $currentFile $profileName
 }
 
-function Switch-Profile($profileName) {
-    $account = Get-Account $profileName
+function Switch-GitHubProfile($profileName) {
+    $account = Get-GitHubProfile $profileName
     $desktopSnapshot = Get-DesktopSnapshot $profileName
     $vscodeSnapshot = Get-VSCodeSnapshot $profileName
     $useDesktop = Test-Path $desktopSnapshot
@@ -447,6 +326,6 @@ function Switch-Profile($profileName) {
         Write-Warning "Git Credential Manager has no saved login for '$($account.user)'. Next push will open a browser sign-in (or run: git credential-manager github login --username $($account.user))."
     }
 
-    Write-Host "Switched to '$profileName'."
-    Show-Status
+    Write-Host "Switched GitHub to '$profileName'."
+    Show-GitHubStatus
 }

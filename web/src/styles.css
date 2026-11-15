@@ -1,5 +1,5 @@
 /* Account Switcher. Windows-native type (Segoe UI Variable, Cascadia Mono), cool neutrals, one cobalt accent.
-   The one bold element is the route bracket in the identity panel: active account -> four tools. */
+   The dashboard is one card per tool; green means "uses this account", amber "needs attention". */
 
 :root {
   --bg: #f2f4f7;
@@ -94,6 +94,7 @@ body {
 
 h1,
 h2,
+h3,
 p {
   margin: 0;
 }
@@ -105,10 +106,6 @@ code {
   border: 1px solid var(--line);
   border-radius: 5px;
   padding: 1px 5px;
-}
-
-.muted {
-  color: var(--muted);
 }
 
 .visually-hidden {
@@ -142,12 +139,17 @@ code {
   transition: background-color 120ms, border-color 120ms, color 120ms;
 }
 
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .btn-primary {
   background: var(--accent);
   color: var(--on-accent);
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background: var(--accent-ink);
 }
 
@@ -157,7 +159,7 @@ code {
   color: var(--ink);
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover:not(:disabled) {
   border-color: var(--accent);
   color: var(--accent-ink);
 }
@@ -205,7 +207,7 @@ code {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 1080px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 20px 32px 0;
 }
@@ -224,13 +226,13 @@ code {
 .page {
   display: grid;
   gap: 20px;
-  max-width: 1080px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 24px 32px 16px;
 }
 
 .footer {
-  max-width: 1080px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 8px 32px 40px;
   color: var(--muted);
@@ -270,63 +272,279 @@ code {
   font-weight: 600;
 }
 
-/* Identity: the active account routed to four tools */
+/* Tool cards */
 
-.identity {
+.cards {
   display: grid;
-  grid-template-columns: auto minmax(48px, 1fr) minmax(0, 600px);
-  align-items: center;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 18px;
-  padding: 28px 28px 28px 32px;
 }
 
-.identity-person {
+.card-head {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
   align-items: center;
-  column-gap: 18px;
-  row-gap: 18px;
+  gap: 14px;
+  padding: 20px 22px 0;
 }
 
-.identity-name {
-  font: 700 34px/1.1 var(--font-display);
-  letter-spacing: -0.025em;
-  overflow-wrap: anywhere;
-}
-
-.identity-login {
-  margin-top: 6px;
-  font: 500 15px/1.3 var(--mono);
+.card-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--accent-soft);
   color: var(--accent-ink);
 }
 
-.identity-commit {
-  margin-top: 6px;
+.card-title {
+  display: grid;
+  min-width: 0;
+}
+
+.card-title h2 {
+  font: 600 19px/1.25 var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.card-sub {
+  color: var(--muted);
   font-size: 13px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.badge-warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.badge-off {
+  background: var(--surface-sunken);
+  color: var(--muted);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.card-body {
+  display: grid;
+  gap: 18px;
+  padding: 20px 22px;
+  flex: 1;
+}
+
+.card-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--line);
+}
+
+.card-empty {
+  color: var(--muted);
+}
+
+.current {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+
+.current-name {
+  font: 700 24px/1.15 var(--font-display);
+  letter-spacing: -0.02em;
   overflow-wrap: anywhere;
 }
 
-.identity-summary {
-  margin-top: 12px;
+.current-id {
+  margin-top: 4px;
+  font: 500 14px/1.35 var(--mono);
+  color: var(--accent-ink);
+  overflow-wrap: anywhere;
+}
+
+.current-meta {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.chips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 10px 0 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chip svg {
+  width: 16px;
+  height: 16px;
+}
+
+.chip-ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.chip-other {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.chip-off {
+  background: var(--surface-sunken);
+  color: var(--muted);
+  border: 1px dashed var(--line-strong);
+}
+
+.card-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--warn);
+  font-size: 13.5px;
+}
+
+.card-warn svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.card-callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--warn-soft);
+  font-size: 14px;
+}
+
+.quick {
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.quick-title {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.quick-empty {
   color: var(--muted);
   font-size: 14px;
 }
 
-.identity-add {
-  margin-top: 16px;
+.quick-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-.trunk {
-  height: 2px;
-  margin-left: 24px;
-  background: var(--line-strong);
+.quick-item {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
 }
 
-.trunk-ok {
-  background: var(--ok);
+.quick-item + .quick-item {
+  border-top: 1px solid var(--line);
 }
+
+.quick-who {
+  display: grid;
+  min-width: 0;
+}
+
+.quick-name {
+  font-weight: 600;
+  font-size: 14.5px;
+}
+
+.quick-detail {
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.quick-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--warn);
+  font-size: 12.5px;
+}
+
+/* Details drawers */
+
+.detail-section + .detail-section {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.detail-section h3 {
+  margin-bottom: 10px;
+  font: 600 16px/1.3 var(--font-display);
+}
+
+.detail-intro {
+  max-width: 62ch;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.detail-section .card-warn {
+  margin-top: 14px;
+}
+
+/* GitHub tools: the active account routed to each tool (bracket on the left). */
 
 .routes {
   list-style: none;
@@ -339,13 +557,12 @@ code {
   --route: var(--line-strong);
   position: relative;
   display: grid;
-  grid-template-columns: 40px minmax(120px, 0.8fr) 1fr;
+  grid-template-columns: 40px minmax(110px, 0.8fr) 1fr;
   align-items: center;
   gap: 14px;
-  padding: 10px 0 10px 40px;
+  padding: 9px 0 9px 36px;
 }
 
-/* Bracket: one vertical segment per row (trimmed at the ends) plus a horizontal stub to the tool. */
 .route::after {
   content: '';
   position: absolute;
@@ -368,9 +585,8 @@ code {
   position: absolute;
   left: 0;
   top: 50%;
-  width: 32px;
+  width: 28px;
   border-top: 2px solid var(--route);
-  transform-origin: left center;
 }
 
 .route-ok {
@@ -384,20 +600,6 @@ code {
 .route-other::before,
 .route-off::before {
   border-top-style: dashed;
-}
-
-.routes[data-rewired] .route::before {
-  animation: route-draw 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  animation-delay: calc(var(--i) * 90ms);
-}
-
-@keyframes route-draw {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
 }
 
 .route-icon {
@@ -456,50 +658,64 @@ code {
   color: var(--warn);
 }
 
-/* Profiles */
+/* Profile rows in the details drawers */
 
-.profiles {
+.rows {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.profile {
+.row {
   display: grid;
-  grid-template-columns: 44px 1fr auto minmax(96px, auto);
-  align-items: center;
-  gap: 16px;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 14px;
   padding: 14px 0;
   border-top: 1px solid var(--line);
 }
 
-.profile:first-child {
+.row:first-child {
   border-top: 0;
 }
 
-.profile-who {
+.row-who {
   display: grid;
+  gap: 1px;
   min-width: 0;
 }
 
-.profile-name {
+.row-name {
   font-weight: 600;
 }
 
-.profile-login {
+.row-id {
   font: 500 13px/1.4 var(--mono);
   color: var(--accent-ink);
+  overflow-wrap: anywhere;
 }
 
-.profile-email {
+.row-meta {
   font-size: 13px;
   color: var(--muted);
   overflow-wrap: anywhere;
 }
 
-.profile-saved {
+.row-warning {
+  font-size: 13px;
+  color: var(--warn);
+}
+
+.row-saved {
   display: flex;
   gap: 14px;
+  margin-top: 4px;
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .saved {
@@ -521,13 +737,6 @@ code {
   width: 10px;
   border-top: 2px dashed var(--line-strong);
   margin: 0 3px;
-}
-
-.profile-action {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
 }
 
 .pill {
@@ -646,7 +855,7 @@ code {
   color: var(--danger);
 }
 
-/* Dialogs: confirm, busy, add-account drawer */
+/* Dialogs: confirm, busy, drawers */
 
 dialog {
   color: var(--ink);
@@ -733,6 +942,10 @@ dialog::backdrop {
   flex-direction: column;
 }
 
+.drawer-wide {
+  width: min(640px, 100%);
+}
+
 .drawer[open] {
   display: flex;
   animation: drawer-in 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -760,7 +973,6 @@ dialog::backdrop {
 .stepper {
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   margin: 18px 28px 0;
   padding: 0 0 18px;
@@ -830,6 +1042,7 @@ dialog::backdrop {
 .field {
   display: grid;
   gap: 6px;
+  width: 100%;
 }
 
 .field-label {
@@ -864,6 +1077,52 @@ dialog::backdrop {
 .field-error {
   font-size: 13px;
   color: var(--danger);
+}
+
+.choices {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.choices legend {
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.choice {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.choice-on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.choice input {
+  margin: 3px 0 0;
+  accent-color: var(--accent);
+}
+
+.choice-title {
+  display: block;
+  font-weight: 600;
+}
+
+.choice-detail {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .prose {
@@ -981,24 +1240,9 @@ dialog::backdrop {
 
 /* Narrow screens */
 
-@media (max-width: 820px) {
-  .identity {
-    grid-template-columns: 1fr;
-    row-gap: 24px;
-    padding: 24px 20px;
-  }
-
-  .trunk {
-    display: none;
-  }
-
-  .profile {
-    grid-template-columns: 44px 1fr auto;
-  }
-
-  .profile-saved {
-    grid-column: 2 / -1;
-    grid-row: 2;
+@media (max-width: 880px) {
+  .cards {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -1014,31 +1258,67 @@ dialog::backdrop {
     padding: 16px;
   }
 
-  .identity-name {
-    font-size: 28px;
+  .card-head {
+    grid-template-columns: 40px minmax(0, 1fr);
+    padding: 16px 16px 0;
+  }
+
+  .card-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .card-body {
+    padding: 16px;
+  }
+
+  .card-foot {
+    padding: 12px 16px 16px;
+  }
+
+  .current-name {
+    font-size: 21px;
+  }
+
+  .card-callout {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .route {
     grid-template-columns: 40px 1fr;
-    padding-left: 32px;
+    padding-left: 30px;
   }
 
   /* The account wraps under the tool, so the stub points at the icon instead of the row middle. */
   .route::before,
   .route:first-child::after {
-    top: 30px;
+    top: 29px;
   }
 
   .route::before {
-    width: 24px;
+    width: 22px;
   }
 
   .route:last-child::after {
     bottom: auto;
-    height: 30px;
+    height: 29px;
   }
 
   .route-account {
+    grid-column: 2;
+  }
+
+  .row {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .row-actions {
     grid-column: 2;
   }
 

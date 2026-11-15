@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { ToolKey } from './api';
+import type { GitHubToolKey } from './api';
 
 function Icon({ children, size = 20 }: { children: ReactNode; size?: number }) {
   return (
@@ -26,8 +26,8 @@ export const TerminalIcon = () => (
   </Icon>
 );
 
-export const BranchIcon = () => (
-  <Icon>
+export const BranchIcon = ({ size }: { size?: number }) => (
+  <Icon size={size}>
     <circle cx="6" cy="5.5" r="2" />
     <circle cx="6" cy="18.5" r="2" />
     <circle cx="18" cy="8" r="2" />
@@ -45,6 +45,14 @@ export const DesktopIcon = () => (
 export const EditorIcon = () => (
   <Icon>
     <path d="m8.5 8-4 4 4 4M15.5 8l4 4-4 4M13.5 5.5l-3 13" />
+  </Icon>
+);
+
+// Claude Code: a terminal prompt with a spark, not any company's logo.
+export const AssistantIcon = ({ size }: { size?: number }) => (
+  <Icon size={size}>
+    <rect x="3" y="4" width="18" height="16" rx="2.5" />
+    <path d="m6.5 9.5 2.5 2.5-2.5 2.5M16 8.5v5M13.5 11h5M14.2 9.2l3.6 3.6M17.8 9.2l-3.6 3.6" />
   </Icon>
 );
 
@@ -72,6 +80,12 @@ export const CloseIcon = () => (
   </Icon>
 );
 
+export const AlertIcon = () => (
+  <Icon size={16}>
+    <path d="M12 4 2.8 19.5h18.4L12 4ZM12 10v4.5M12 17.2v.3" />
+  </Icon>
+);
+
 export const BrandMark = () => (
   <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
     <rect width="32" height="32" rx="8" fill="var(--accent)" />
@@ -89,9 +103,9 @@ export const BrandMark = () => (
   </svg>
 );
 
-export const toolIcons: Record<ToolKey, () => JSX.Element> = {
+export const githubToolIcons: Record<GitHubToolKey, () => JSX.Element> = {
   gh: TerminalIcon,
-  git: BranchIcon,
+  git: () => <BranchIcon />,
   desktop: DesktopIcon,
   vscode: EditorIcon,
 };

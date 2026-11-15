@@ -2,10 +2,10 @@
 
 ## Purpose
 
-`.\switch-github.ps1 -Clear` (or **Prepare** in the `-Ui` web page, which first saves the active
+`.\switcher.ps1 github -Clear` (or **Prepare** in the `-Ui` web page, which first saves the active
 profile) — make GitHub Desktop and VS Code start signed out **without signing out** (which would
-delete the token), so another account can be signed in. Implemented by `Clear-AppState` in
-`switch-github-core.ps1`, run inside `Invoke-WithAppsClosed`.
+delete the token), so another account can be signed in. Implemented by `Clear-GitHubAppState` in
+`lib/github.ps1`, run inside `Invoke-WithAppsClosed`.
 
 ## Steps
 
@@ -23,13 +23,13 @@ Tokens in Credential Manager are not touched.
 
 The `-Ui` web page walks through this (`readme/flows/ui.md`). From the command line:
 
-1. `.\switch-github.ps1 -Save work` — the current account is saved
-2. `.\switch-github.ps1 -Clear`
+1. `.\switcher.ps1 github -Save work` — the current account is saved
+2. `.\switcher.ps1 github -Clear`
 3. Sign in to GitHub Desktop and VS Code with the new account
 4. `gh auth login --hostname github.com --web` with the new account
 5. `git credential-manager github login --username <new-login>` (or let the first push prompt)
 6. Add the profile to `accounts.json`
-7. `.\switch-github.ps1 -Save personal`
+7. `.\switcher.ps1 github -Save personal`
 
 ## Failure behavior
 
@@ -43,6 +43,7 @@ The `-Ui` web page walks through this (`readme/flows/ui.md`). From the command l
 - Old `_cleared\<timestamp>` folders are never deleted automatically.
 
 ---
-*Last updated: 2026-11-14 (Prepare moved to the -Ui web page)*
-*Previously: 2026-10-30 (moved into Clear-AppState; Prepare in the -Login window reuses it)*
+*Last updated: 2026-11-15 (GitHub family in lib/github.ps1; functions renamed *-GitHub*; CLI is switcher.ps1 github -Clear)*
+*Previously: 2026-11-14 (Prepare moved to the -Ui web page)*
+*Previously: 2026-10-30 (moved into Clear-GitHubAppState; Prepare in the -Login window reuses it)*
 *Previously: 2026-10-30 (initial flow doc)*

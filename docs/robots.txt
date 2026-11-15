@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://sale-shubham.github.io/github-account-switcher/sitemap.xml

@@ -2,13 +2,13 @@
 
 ## Purpose
 
-`.\switch-github.ps1 <profile>` (or **Switch** in the `-Ui` web page) — make `<profile>`'s GitHub
+`.\switcher.ps1 github <profile>` (or **Switch** in the `-Ui` web page) — make `<profile>`'s GitHub
 account active in the gh CLI, git, Git Credential Manager, GitHub Desktop and VS Code. Implemented
-by `Switch-Profile` in `switch-github-core.ps1`.
+by `Switch-GitHubProfile` in `lib/github.ps1`.
 
 ## Steps
 
-1. `Get-Account $Name` — the profile must exist in `accounts.json` with `name`, `email`, `user`.
+1. `Get-GitHubProfile $Name` — the profile must exist in `accounts.json` with `name`, `email`, `user`.
 2. Decide which apps take part: Desktop if `<dataDir>\<profile>\Local Storage` exists
    (`$useDesktop`); VS Code if Python + a VS Code DB exist **and**
    `<dataDir>\<profile>\vscode-github-auth.txt` exists (`$useVSCode`).
@@ -28,7 +28,7 @@ by `Switch-Profile` in `switch-github-core.ps1`.
 11. `Invoke-WithAppsClosed` reopens whatever was running (`Start-Apps`, in `finally` — also after a failure).
 12. Warn if `git credential-manager github list` does not include the user (next push opens a
     browser sign-in).
-13. `Show-Status`.
+13. `Show-GitHubStatus`.
 
 ## Data pathways
 
@@ -57,8 +57,9 @@ by `Switch-Profile` in `switch-github-core.ps1`.
 - `_previous` keeps only the last replaced state.
 
 ---
-*Last updated: 2026-11-15 (refuses to run from VS Code's terminal when VS Code must close)*
+*Last updated: 2026-11-15 (GitHub family in lib/github.ps1; functions renamed *-GitHub*; CLI is switcher.ps1 github <profile>)*
+*Previously: 2026-11-15 (refuses to run from VS Code's terminal when VS Code must close)*
 *Previously: 2026-11-14 (Switch button now in the -Ui web page)*
 *Previously: 2026-11-14 (git config step is now Set-GitIdentity, shared with Save)*
-*Previously: 2026-10-30 (moved into Switch-Profile in switch-github-core.ps1; app close via Invoke-WithAppsClosed)*
+*Previously: 2026-10-30 (moved into Switch-GitHubProfile in lib/github.ps1; app close via Invoke-WithAppsClosed)*
 *Previously: 2026-10-30 (initial flow doc)*
